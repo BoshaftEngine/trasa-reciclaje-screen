@@ -1,1 +1,1 @@
-{"rules":{"rooms":{"trasa":{".read":"auth != null","display":{".write":"auth != null && auth.uid === 'PEGA_AQUI_TU_UID_DE_CONTROL'"},"status":{".write":"auth != null"}}}}}
+{"rules":{"rooms":{"trasa":{".read":"auth != null","display":{".write":"auth != null && auth.uid === 'vcwTQVUSEkbmCMYAcTmgugq2bWo2'"},"status":{".write":"auth != null"}}}}}
