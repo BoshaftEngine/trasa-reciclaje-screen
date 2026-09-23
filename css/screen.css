@@ -1,1 +1,595 @@
-:root{--trasa:#6c7d68;--bg:#0d120e;--panel:#182019;--text:#edf3ee;--muted:#9cab9f}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;font-family:Arial,Helvetica,sans-serif;color:var(--text)}.screen{position:fixed;inset:0;background:#000}.view{position:absolute;inset:0}.hidden{display:none!important}#homeView{background:url("../assets/inicio.png") center/cover no-repeat}#resultsView{background:radial-gradient(circle at 50% 10%,rgba(108,125,104,.15),transparent 35%),var(--bg);padding:46px 58px 44px}.results-header{text-align:center;margin-bottom:26px}.results-header h1{margin:0;font-size:clamp(38px,4vw,72px);letter-spacing:.05em}.results-header p{margin:8px 0 0;color:var(--muted);font-size:clamp(18px,1.6vw,28px)}.material-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;align-content:start}.material-card{min-width:0;min-height:215px;padding:15px 10px 16px;background:rgba(24,32,25,.97);border:2px solid rgba(108,125,104,.55);border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center}.material-card img{width:108px;height:108px;object-fit:contain;margin-bottom:10px}.material-name{min-height:42px;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:19px;line-height:1.08}.material-qty{margin-top:8px;font-size:36px;font-weight:800;color:#fff}.results-footer{position:absolute;left:0;right:0;bottom:18px;text-align:center;color:var(--muted);font-size:20px}@media(max-width:1300px){.material-grid{grid-template-columns:repeat(5,1fr)}.material-card{min-height:190px}.material-card img{width:88px;height:88px}}@media(max-width:1000px){.material-grid{grid-template-columns:repeat(4,1fr)}}
+:root {
+  --trasa: #6c7d68;
+  --bg: #0d120e;
+  --panel: #182019;
+  --text: #edf3ee;
+  --muted: #9cab9f;
+}
+
+
+/* ============================================================
+   GENERAL
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+
+html,
+body {
+  margin: 0;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+
+  background: #000;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  color: var(--text);
+}
+
+
+.screen {
+  position: fixed;
+  inset: 0;
+
+  background: #000;
+}
+
+
+.view {
+  position: absolute;
+  inset: 0;
+}
+
+
+.hidden {
+  display: none !important;
+}
+
+
+/* ============================================================
+   PANTALLA PRINCIPAL
+   ============================================================ */
+
+#homeView {
+
+  background:
+    url("../assets/inicio.png")
+    center
+    center
+    / cover
+    no-repeat;
+
+}
+
+
+/* ============================================================
+   PANTALLA DE RESULTADOS
+   ============================================================ */
+
+#resultsView {
+
+  background:
+
+    radial-gradient(
+      circle at 50% 10%,
+      rgba(108, 125, 104, 0.15),
+      transparent 35%
+    ),
+
+    var(--bg);
+
+
+  padding:
+    46px
+    58px
+    44px;
+
+}
+
+
+/* ============================================================
+   CABECERA
+   ============================================================ */
+
+.results-header {
+
+  text-align: center;
+
+  margin-bottom:
+    26px;
+
+}
+
+
+.results-header h1 {
+
+  margin: 0;
+
+  font-size:
+    clamp(
+      38px,
+      4vw,
+      72px
+    );
+
+  letter-spacing:
+    0.05em;
+
+}
+
+
+.results-header p {
+
+  margin:
+    8px
+    0
+    0;
+
+  color:
+    var(--muted);
+
+  font-size:
+    clamp(
+      18px,
+      1.6vw,
+      28px
+    );
+
+}
+
+
+/* ============================================================
+   GRID NORMAL
+
+   Hasta 12 materiales
+   6 columnas x 2 filas
+   ============================================================ */
+
+.material-grid {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      6,
+      minmax(0, 1fr)
+    );
+
+  gap:
+    16px;
+
+  align-content:
+    start;
+
+}
+
+
+/* ============================================================
+   TARJETAS
+   ============================================================ */
+
+.material-card {
+
+  min-width:
+    0;
+
+  min-height:
+    215px;
+
+
+  padding:
+    15px
+    10px
+    16px;
+
+
+  background:
+    rgba(
+      24,
+      32,
+      25,
+      0.97
+    );
+
+
+  border:
+    2px
+    solid
+    rgba(
+      108,
+      125,
+      104,
+      0.55
+    );
+
+
+  border-radius:
+    18px;
+
+
+  display:
+    flex;
+
+
+  flex-direction:
+    column;
+
+
+  align-items:
+    center;
+
+
+  justify-content:
+    center;
+
+}
+
+
+/* ============================================================
+   IMAGEN MATERIAL
+   ============================================================ */
+
+.material-card img {
+
+  width:
+    108px;
+
+  height:
+    108px;
+
+
+  object-fit:
+    contain;
+
+
+  margin-bottom:
+    10px;
+
+}
+
+
+/* ============================================================
+   NOMBRE MATERIAL
+   ============================================================ */
+
+.material-name {
+
+  min-height:
+    42px;
+
+
+  display:
+    flex;
+
+
+  align-items:
+    center;
+
+
+  justify-content:
+    center;
+
+
+  text-align:
+    center;
+
+
+  font-weight:
+    700;
+
+
+  font-size:
+    19px;
+
+
+  line-height:
+    1.08;
+
+}
+
+
+/* ============================================================
+   CANTIDAD
+   ============================================================ */
+
+.material-qty {
+
+  margin-top:
+    8px;
+
+
+  font-size:
+    36px;
+
+
+  font-weight:
+    800;
+
+
+  color:
+    #ffffff;
+
+}
+
+
+/* ============================================================
+   PIE
+   ============================================================ */
+
+.results-footer {
+
+  position:
+    absolute;
+
+
+  left:
+    0;
+
+  right:
+    0;
+
+  bottom:
+    18px;
+
+
+  text-align:
+    center;
+
+
+  color:
+    var(--muted);
+
+
+  font-size:
+    20px;
+
+}
+
+
+/* ============================================================
+   AJUSTE NORMAL PARA PANTALLAS MÁS PEQUEÑAS
+   ============================================================ */
+
+@media (max-width: 1300px) {
+
+  .material-grid {
+
+    grid-template-columns:
+      repeat(
+        5,
+        1fr
+      );
+
+  }
+
+
+  .material-card {
+
+    min-height:
+      190px;
+
+  }
+
+
+  .material-card img {
+
+    width:
+      88px;
+
+    height:
+      88px;
+
+  }
+
+}
+
+
+@media (max-width: 1000px) {
+
+  .material-grid {
+
+    grid-template-columns:
+      repeat(
+        4,
+        1fr
+      );
+
+  }
+
+}
+
+
+/* ============================================================
+   MODO COMPACTO
+   ============================================================
+
+   Se activa automáticamente mediante screen.js
+   cuando hay MÁS DE 12 materiales.
+
+   13 - 17 materiales
+   Máximo: 9 columnas x 2 filas
+
+   ============================================================ */
+
+#resultsView.compact-results {
+
+  padding:
+    24px
+    28px
+    30px;
+
+}
+
+
+/* CABECERA COMPACTA */
+
+.compact-results
+.results-header {
+
+  margin-bottom:
+    14px;
+
+}
+
+
+.compact-results
+.results-header h1 {
+
+  font-size:
+    clamp(
+      30px,
+      3vw,
+      50px
+    );
+
+}
+
+
+.compact-results
+.results-header p {
+
+  margin-top:
+    4px;
+
+
+  font-size:
+    clamp(
+      14px,
+      1.2vw,
+      20px
+    );
+
+}
+
+
+/* ============================================================
+   GRID COMPACTO
+
+   9 columnas:
+   
+   17 materiales =
+   fila 1 → 9
+   fila 2 → 8
+   ============================================================ */
+
+.compact-results
+.material-grid {
+
+  grid-template-columns:
+    repeat(
+      9,
+      minmax(0, 1fr)
+    );
+
+
+  gap:
+    10px;
+
+}
+
+
+/* ============================================================
+   TARJETAS COMPACTAS
+   ============================================================ */
+
+.compact-results
+.material-card {
+
+  min-height:
+    150px;
+
+
+  padding:
+    9px
+    6px
+    10px;
+
+
+  border-radius:
+    13px;
+
+}
+
+
+/* ============================================================
+   IMÁGENES COMPACTAS
+   ============================================================ */
+
+.compact-results
+.material-card img {
+
+  width:
+    64px;
+
+  height:
+    64px;
+
+
+  margin-bottom:
+    6px;
+
+}
+
+
+/* ============================================================
+   NOMBRE COMPACTO
+   ============================================================ */
+
+.compact-results
+.material-name {
+
+  min-height:
+    32px;
+
+
+  font-size:
+    13px;
+
+
+  line-height:
+    1.05;
+
+}
+
+
+/* ============================================================
+   CANTIDAD COMPACTA
+   ============================================================ */
+
+.compact-results
+.material-qty {
+
+  margin-top:
+    5px;
+
+
+  font-size:
+    25px;
+
+}
+
+
+/* ============================================================
+   PIE COMPACTO
+   ============================================================ */
+
+.compact-results
+.results-footer {
+
+  bottom:
+    8px;
+
+
+  font-size:
+    14px;
+
+}
