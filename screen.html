@@ -1,1 +1,117 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TRASA · Pantalla</title><link rel="stylesheet" href="css/screen.css?v=1"></head><body><main class="screen"><section id="homeView" class="view"></section><section id="resultsView" class="view hidden"><div class="results-header"><h1>MATERIALES RECUPERADOS</h1><p>Indica qué materiales deseas conservar</p></div><div id="materialGrid" class="material-grid"></div><div class="results-footer">TRASA · Tratamiento y recuperación de materiales</div></section></main><script type="module" src="js/screen.js?v=1"></script></body></html>
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    TRASA · Pantalla
+  </title>
+
+
+  <!--
+    v=2 sirve para evitar que GTA / Firefox
+    carguen una versión antigua desde caché
+  -->
+
+  <link
+    rel="stylesheet"
+    href="css/screen.css?v=2"
+  >
+
+</head>
+
+
+<body>
+
+
+  <main class="screen">
+
+
+    <!-- ======================================================
+         PANTALLA PRINCIPAL
+         ====================================================== -->
+
+    <section
+      id="homeView"
+      class="view"
+    >
+    </section>
+
+
+
+    <!-- ======================================================
+         RESULTADOS DEL RECICLAJE
+         ====================================================== -->
+
+    <section
+      id="resultsView"
+      class="view hidden"
+    >
+
+
+      <!-- CABECERA -->
+
+      <div class="results-header">
+
+        <h1>
+          MATERIALES RECUPERADOS
+        </h1>
+
+        <p>
+          Indica qué materiales deseas conservar
+        </p>
+
+      </div>
+
+
+
+      <!--
+        Aquí screen.js genera automáticamente
+        las tarjetas de materiales.
+      -->
+
+      <div
+        id="materialGrid"
+        class="material-grid"
+      >
+      </div>
+
+
+
+      <!-- PIE -->
+
+      <div class="results-footer">
+
+        TRASA · Tratamiento y recuperación de materiales
+
+      </div>
+
+
+    </section>
+
+
+  </main>
+
+
+
+  <!-- ========================================================
+       JAVASCRIPT
+       ======================================================== -->
+
+  <script
+    type="module"
+    src="js/screen.js?v=2"
+  >
+  </script>
+
+
+</body>
+
+</html>
