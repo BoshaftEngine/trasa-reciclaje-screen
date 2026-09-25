@@ -1,6 +1,6 @@
 :root {
   --trasa: #6c7d68;
-  --bg: #0d120e;
+  --bg: #4B5320;
   --panel: #182019;
   --text: #edf3ee;
   --muted: #9cab9f;
@@ -28,7 +28,7 @@ body {
   background: #000;
 
   font-family:
-    Arial,
+    Bebas Neue,
     Helvetica,
     sans-serif;
 
