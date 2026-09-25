@@ -1,9 +1,51 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap");
+
 :root {
+
+  /* ==========================================================
+     COLORES
+     ========================================================== */
+
   --trasa: #6c7d68;
-  --bg: #4B5320;
+
+  --bg: #252525;
+
   --panel: #182019;
+
   --text: #edf3ee;
+
   --muted: #9cab9f;
+
+
+  /* ==========================================================
+     TAMAÑOS DE TEXTO - MODO NORMAL
+     ========================================================== */
+
+  --titulo: 48px;
+
+  --subtitulo: 26px;
+
+  --material: 21px;
+
+  --cantidad: 38px;
+
+  --pie: 18px;
+
+
+  /* ==========================================================
+     TAMAÑOS DE TEXTO - MODO COMPACTO
+     ========================================================== */
+
+  --titulo-compacto: 48px;
+
+  --subtitulo-compacto: 26px;
+
+  --material-compacto: 15px;
+
+  --cantidad-compacta: 28px;
+
+  --pie-compacto: 18px;
+
 }
 
 
@@ -18,9 +60,11 @@
 
 html,
 body {
+
   margin: 0;
 
   width: 100%;
+
   height: 100%;
 
   overflow: hidden;
@@ -28,30 +72,39 @@ body {
   background: #000;
 
   font-family:
-    Bebas Neue,
-    Helvetica,
+    "Bebas Neue",
     sans-serif;
 
-  color: var(--text);
+  color:
+    var(--text);
+
 }
 
 
 .screen {
+
   position: fixed;
+
   inset: 0;
 
   background: #000;
+
 }
 
 
 .view {
+
   position: absolute;
+
   inset: 0;
+
 }
 
 
 .hidden {
+
   display: none !important;
+
 }
 
 
@@ -115,14 +168,13 @@ body {
   margin: 0;
 
   font-size:
-    clamp(
-      38px,
-      4vw,
-      72px
-    );
+    var(--titulo);
 
   letter-spacing:
     0.05em;
+
+  font-weight:
+    400;
 
 }
 
@@ -138,11 +190,10 @@ body {
     var(--muted);
 
   font-size:
-    clamp(
-      18px,
-      1.6vw,
-      28px
-    );
+    var(--subtitulo);
+
+  font-weight:
+    400;
 
 }
 
@@ -246,10 +297,8 @@ body {
   height:
     108px;
 
-
   object-fit:
     contain;
-
 
   margin-bottom:
     10px;
@@ -283,16 +332,20 @@ body {
     center;
 
 
-  font-weight:
-    700;
-
-
   font-size:
-    19px;
+    var(--material);
+
+
+  font-weight:
+    400;
 
 
   line-height:
-    1.08;
+    1.05;
+
+
+  letter-spacing:
+    0.03em;
 
 }
 
@@ -308,15 +361,19 @@ body {
 
 
   font-size:
-    36px;
+    var(--cantidad);
 
 
   font-weight:
-    800;
+    400;
 
 
   color:
     #ffffff;
+
+
+  line-height:
+    1;
 
 }
 
@@ -334,8 +391,10 @@ body {
   left:
     0;
 
+
   right:
     0;
+
 
   bottom:
     18px;
@@ -350,7 +409,15 @@ body {
 
 
   font-size:
-    20px;
+    var(--pie);
+
+
+  font-weight:
+    400;
+
+
+  letter-spacing:
+    0.04em;
 
 }
 
@@ -385,6 +452,7 @@ body {
     width:
       88px;
 
+
     height:
       88px;
 
@@ -410,14 +478,12 @@ body {
 
 /* ============================================================
    MODO COMPACTO
-   ============================================================
 
    Se activa automáticamente mediante screen.js
    cuando hay MÁS DE 12 materiales.
 
    13 - 17 materiales
    Máximo: 9 columnas x 2 filas
-
    ============================================================ */
 
 #resultsView.compact-results {
@@ -430,7 +496,9 @@ body {
 }
 
 
-/* CABECERA COMPACTA */
+/* ============================================================
+   CABECERA COMPACTA
+   ============================================================ */
 
 .compact-results
 .results-header {
@@ -445,11 +513,7 @@ body {
 .results-header h1 {
 
   font-size:
-    clamp(
-      30px,
-      3vw,
-      50px
-    );
+    var(--titulo-compacto);
 
 }
 
@@ -462,11 +526,7 @@ body {
 
 
   font-size:
-    clamp(
-      14px,
-      1.2vw,
-      20px
-    );
+    var(--subtitulo-compacto);
 
 }
 
@@ -474,9 +534,9 @@ body {
 /* ============================================================
    GRID COMPACTO
 
-   9 columnas:
-   
-   17 materiales =
+   9 columnas
+
+   17 materiales:
    fila 1 → 9
    fila 2 → 8
    ============================================================ */
@@ -530,6 +590,7 @@ body {
   width:
     64px;
 
+
   height:
     64px;
 
@@ -552,11 +613,11 @@ body {
 
 
   font-size:
-    13px;
+    var(--material-compacto);
 
 
   line-height:
-    1.05;
+    1.02;
 
 }
 
@@ -573,7 +634,7 @@ body {
 
 
   font-size:
-    25px;
+    var(--cantidad-compacta);
 
 }
 
@@ -590,6 +651,6 @@ body {
 
 
   font-size:
-    14px;
+    var(--pie-compacto);
 
 }
