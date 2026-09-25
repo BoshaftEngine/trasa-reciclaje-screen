@@ -1,1 +1,217 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TRASA · Control de reciclaje</title><link rel="stylesheet" href="css/control.css?v=1"></head><body><main class="shell"><header><div><h1>TRASA · CONTROL DE RECICLAJE</h1><div class="subtitle">Introduce las cantidades obtenidas y publícalas en la pantalla del cliente.</div></div><div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Pantalla desconectada</span></div></header><div id="configError" class="notice error hidden"></div><div id="message" class="notice hidden"></div><section class="panel"><h2>Materiales obtenidos</h2><div id="materialInputs" class="material-inputs"></div></section><section class="panel"><h2>Control de pantalla</h2><div class="actions"><button id="showResultsBtn" class="primary big">MOSTRAR MATERIALES</button><button id="updateResultsBtn">Actualizar resultado</button><button id="homeBtn">VOLVER A INICIO</button><button id="clearBtn" class="danger">Limpiar cantidades</button></div><p class="help">Solo aparecerán materiales con cantidad mayor que 0. Limpiar cantidades no cambia la pantalla hasta que vuelvas a publicar.</p></section><section class="panel"><h2>Firebase</h2><p class="help">Copia este UID y úsalo en las reglas de Realtime Database.</p><div id="uidBox" class="uid">Conectando…</div></section></main><script type="module" src="js/control.js?v=4"></script></script></body></html>
+<!doctype html>
+
+<html lang="es">
+
+<head>
+
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>
+    TRASA · Control de reciclaje
+  </title>
+
+
+  <link
+    rel="stylesheet"
+    href="css/control.css?v=1"
+  >
+
+</head>
+
+
+<body>
+
+
+  <main class="shell">
+
+
+    <!-- ======================================================
+         CABECERA
+         ====================================================== -->
+
+    <header>
+
+      <div>
+
+        <h1>
+          TRASA · CONTROL DE RECICLAJE
+        </h1>
+
+        <div class="subtitle">
+
+          Introduce las cantidades obtenidas y publícalas
+          en la pantalla del cliente.
+
+        </div>
+
+      </div>
+
+
+      <div class="status">
+
+        <span
+          id="statusDot"
+          class="dot">
+        </span>
+
+        <span id="statusText">
+          Pantalla desconectada
+        </span>
+
+      </div>
+
+    </header>
+
+
+
+    <!-- ======================================================
+         MENSAJES
+         ====================================================== -->
+
+    <div
+      id="configError"
+      class="notice error hidden">
+    </div>
+
+
+    <div
+      id="message"
+      class="notice hidden">
+    </div>
+
+
+
+    <!-- ======================================================
+         MATERIALES
+         ====================================================== -->
+
+    <section class="panel">
+
+      <h2>
+        Materiales obtenidos
+      </h2>
+
+
+      <div
+        id="materialInputs"
+        class="material-inputs">
+      </div>
+
+    </section>
+
+
+
+    <!-- ======================================================
+         CONTROL DE PANTALLA
+         ====================================================== -->
+
+    <section class="panel">
+
+      <h2>
+        Control de pantalla
+      </h2>
+
+
+      <div class="actions">
+
+
+        <button
+          id="showResultsBtn"
+          class="primary big">
+
+          MOSTRAR MATERIALES
+
+        </button>
+
+
+        <button id="updateResultsBtn">
+
+          Actualizar resultado
+
+        </button>
+
+
+        <button id="homeBtn">
+
+          VOLVER A INICIO
+
+        </button>
+
+
+        <button
+          id="clearBtn"
+          class="danger">
+
+          Limpiar cantidades
+
+        </button>
+
+
+      </div>
+
+
+      <p class="help">
+
+        Solo aparecerán materiales con cantidad mayor que 0.
+
+        Limpiar cantidades no cambia la pantalla hasta
+        que vuelvas a publicar.
+
+      </p>
+
+    </section>
+
+
+
+    <!-- ======================================================
+         FIREBASE
+         ====================================================== -->
+
+    <section class="panel">
+
+      <h2>
+        Firebase
+      </h2>
+
+
+      <p class="help">
+
+        Copia este UID y úsalo en las reglas
+        de Realtime Database.
+
+      </p>
+
+
+      <div
+        id="uidBox"
+        class="uid">
+
+        Conectando…
+
+      </div>
+
+    </section>
+
+
+  </main>
+
+
+
+  <!-- ========================================================
+       JAVASCRIPT
+       ======================================================== -->
+
+  <script
+    type="module"
+    src="js/control.js?v=4">
+  </script>
+
+
+</body>
+
+</html>
