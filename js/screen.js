@@ -1,4 +1,4 @@
-import { MATERIALS } from "./materials.js";
+import { MATERIALS } from "./materials.js?v=2";
 
 import {
   loadFirebase,
