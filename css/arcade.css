@@ -1,0 +1,225 @@
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap");
+
+/* Arcade (prefijo arcade- para no modificar estilos del reciclaje). */
+#arcadeView {
+  z-index: 10;
+  background: #202520;
+  color: #f0f5f0;
+  padding: 23px 35px 72px;
+  font-family: "Bebas Neue", Arial, sans-serif;
+  overflow: hidden;
+}
+.arcade-screen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 3px solid #6c7d68;
+}
+.arcade-screen-brand { font-size: clamp(44px, 4vw, 75px); letter-spacing: 3px; line-height: 1; }
+.arcade-screen-brand span { color: #9db091; }
+.arcade-screen-subtitle { color: #c8d7c7; font-size: clamp(18px, 2vw, 32px); letter-spacing: 2px; }
+.arcade-screen-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(340px, 0.85fr);
+  gap: 22px;
+  height: calc(100% - 93px);
+  padding-top: 18px;
+}
+.arcade-screen-main {
+  min-height: 0;
+  padding: 15px 20px 20px;
+  border: 2px solid rgba(108,125,104,.6);
+  border-radius: 16px;
+  background: #171e18;
+  display: flex;
+  flex-direction: column;
+}
+.arcade-featured-title {
+  font-size: clamp(28px, 2.7vw, 43px);
+  padding-bottom: 12px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.arcade-screen-stage { min-height: 0; flex: 1; display: flex; align-items: center; justify-content: center; }
+.arcade-empty-stage { text-align: center; color: #c3cfc4; font-size: clamp(22px, 2.8vw, 40px); }
+.arcade-wait-symbol { font-size: clamp(96px, 14vw, 200px); line-height: 1; color: #88a17e; }
+.arcade-screen-sidebar {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1fr 1.08fr 1.08fr;
+  gap: 12px;
+}
+.arcade-sidebar-panel {
+  background: #171e18;
+  border: 2px solid rgba(108,125,104,.6);
+  border-radius: 12px;
+  padding: 12px 18px;
+  min-height: 0;
+  overflow: hidden;
+}
+.arcade-sidebar-panel h2 {
+  margin: 0 0 10px;
+  color: #bed2b7;
+  font-size: clamp(22px, 2vw, 35px);
+  font-weight: 400;
+  border-bottom: 1px solid #405044;
+}
+.arcade-rank-row, .arcade-player-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin: 5px 0;
+  font-size: clamp(17px, 1.35vw, 25px);
+}
+.arcade-rank-row span, .arcade-player-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arcade-rank-row strong, .arcade-player-row strong { font-weight: 400; color: #f2eab4; white-space: nowrap; }
+.arcade-player-row.is-featured { color: #b1cf9d; }
+.arcade-muted { font-size: 24px; color: #96a496; }
+.arcade-screen-footer {
+  position: absolute;
+  left: 35px; right: 35px; bottom: 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 16px;
+  font-size: clamp(18px, 1.6vw, 28px);
+  white-space: nowrap;
+}
+.arcade-screen-cta { color: #f0f5f0; text-decoration: none; background: #4b5320; border: 1px solid #859c71; padding: 4px 10px; border-radius: 6px; }
+.arcade-screen-footer strong { color: #b8d3af; font-weight: 400; font-size: clamp(15px, 1.3vw, 25px); }
+.arcade-memory-stage, .arcade-quiz-stage { width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; }
+.arcade-stage-meta { width: 100%; text-align: center; font-size: clamp(20px, 1.8vw, 31px); margin-bottom: 12px; color: #a9c2a3; }
+.arcade-spectator-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  width: min(100%, 650px);
+  height: min(83%, 610px);
+}
+.arcade-spectator-card {
+  display: flex; align-items: center; justify-content: center;
+  background: #344135; border: 2px solid #678063;
+  border-radius: 12px;
+  color: #d7e6d5;
+  font-size: clamp(40px, 5vw, 75px);
+  overflow: hidden;
+}
+.arcade-spectator-card.is-visible { background: #19241a; }
+.arcade-spectator-card img { height: 88%; width: 88%; object-fit: contain; }
+.arcade-quiz-icon { font-size: clamp(85px, 12vh, 155px); line-height: 1.1; }
+.arcade-quiz-stage h3 { margin: 8px 0 22px; font-size: clamp(27px, 3vw, 48px); font-weight: 400; }
+.arcade-quiz-answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; width: min(98%, 650px); }
+.arcade-quiz-answer { padding: 13px 10px; text-align: center; border: 2px solid #546e54; border-radius: 9px; font-size: clamp(20px, 2vw, 34px); }
+.arcade-quiz-answer.good { border-color: #77c06e; background: #28482a; }
+.arcade-quiz-answer.bad { border-color: #bd6565; background: #592829; }
+
+/* PANEL CONTROL */
+.arcade-control-panel { border-color: #617456 !important; }
+.arcade-control-url { overflow-wrap: anywhere; font-size: 14px; }
+.arcade-control-url a { color: #b5d5a7; }
+.arcade-control-featured { margin-top: 15px; }
+.arcade-control-featured label { display: block; margin-bottom: 8px; color: #d3e1d0; }
+.arcade-control-feature-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.arcade-control-feature-row select { flex: 1; min-width: 225px; padding: 10px; color: #edf3ee; background: #0d120e; border: 1px solid #465747; border-radius: 8px; }
+
+/* WEB DE LOS JUGADORES */
+.arcade-game-body {
+  min-height: 100vh; margin: 0; background: #101611; color: #f0f6f0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.arcade-game-body .hidden { display: none !important; }
+.arcade-player-shell { width: min(950px, calc(100% - 28px)); margin: auto; padding: 24px 0 30px; }
+.arcade-player-head { text-align: center; }
+.arcade-player-logo { font-family: "Bebas Neue",sans-serif; font-size: clamp(54px, 9vw, 88px); letter-spacing: 2px; line-height: 1; }
+.arcade-player-logo span { color: #9fb593; }
+.arcade-player-head p { margin: 10px auto; color: #b1c1b1; font-size: 15px; }
+.arcade-room-status { margin: 15px 0; padding: 12px 18px; border: 1px solid #586e56; border-radius: 9px; background: #1d291d; color: #d2e5cd; }
+.arcade-player-panel { background: #1b241c; border: 1px solid #455945; border-radius: 14px; padding: 20px; }
+.arcade-player-panel label { display: block; margin-bottom: 8px; font-weight: 600; }
+.arcade-player-panel input { width: 100%; border: 1px solid #5c7459; color: white; background: #101810; padding: 12px; border-radius: 9px; font-size: 17px; }
+.arcade-small-note { font-size: 13px; color: #b3c4b3; margin: 15px 0; }
+.arcade-game-choices { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.arcade-game-choices article { text-align: center; background: #111a12; border: 1px solid #455945; border-radius: 13px; padding: 20px 12px; }
+.arcade-game-emoji { font-size: 55px; }
+.arcade-game-choices h2 { font: 32px "Bebas Neue",sans-serif; letter-spacing: .5px; margin: 7px 0; }
+.arcade-game-choices article p { color: #b3c4b3; min-height: 48px; font-size: 14px; }
+.arcade-player-panel button { cursor: pointer; border-radius: 9px; background: #4b5320; border: 1px solid #91a475; color: white; padding: 12px 18px; font: 23px "Bebas Neue",sans-serif; letter-spacing: .5px; }
+.arcade-player-panel button:disabled { cursor: not-allowed; opacity: .45; }
+.arcade-playing-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-family: "Bebas Neue",sans-serif; }
+.arcade-playing-meta h1 { flex-basis: 100%; margin: 0 0 6px; text-align: center; font-size: 38px; }
+.arcade-playing-meta > div { font-size: 25px; color: #b8d3af; margin-bottom: 14px; }
+.arcade-player-memory { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
+.arcade-flip-card { aspect-ratio: 1; width: 100%; display: flex; align-items: center; justify-content: center; background: #344336 !important; font: 55px "Bebas Neue",sans-serif !important; }
+.arcade-flip-card.flipped { background: #18271b !important; }
+.arcade-flip-card.matched { border-color: #9fba92; }
+.arcade-flip-card img { max-width: 90%; max-height: 88%; object-fit: contain; }
+.arcade-player-quiz { text-align: center; }
+.arcade-player-quiz-round { font: 23px "Bebas Neue",sans-serif; color: #b2c8b0; }
+.arcade-player-quiz-icon { font-size: 85px; }
+.arcade-player-quiz h2 { font: 37px "Bebas Neue",sans-serif; margin: 8px 0; }
+.arcade-player-quiz p { margin: 5px 0 20px; color: #aec3ac; }
+.arcade-player-quiz-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.arcade-answer-btn { background: #2c3c2b !important; }
+.arcade-answer-btn.good { background: #326b32 !important; }
+.arcade-answer-btn.bad { background: #783b3b !important; }
+.arcade-end { text-align: center; padding: 20px; }
+.arcade-end h2 { font: 43px "Bebas Neue",sans-serif; }
+.arcade-end-points { color: #c5e3b5; font: 100px "Bebas Neue",sans-serif; }
+.arcade-end p { color: #b3c4b3; }
+.arcade-player-shell footer { text-align: center; color: #819681; font: 21px "Bebas Neue",sans-serif; padding-top: 16px; }
+
+@media (max-width: 750px) {
+  #arcadeView { padding: 13px 15px 62px; }
+  .arcade-screen-columns { grid-template-columns: minmax(0,1.6fr) minmax(180px,1fr); gap: 9px; }
+  .arcade-screen-sidebar { gap: 6px; }
+  .arcade-sidebar-panel { padding: 7px; }
+  .arcade-screen-footer { left: 12px; right: 12px; white-space: normal; }
+  .arcade-screen-footer strong { overflow-wrap: anywhere; }
+}
+@media (max-width: 560px) {
+  .arcade-game-choices { grid-template-columns: 1fr; }
+  .arcade-player-panel { padding: 14px; }
+  .arcade-game-choices article p { min-height: 0; }
+}
+
+
+/* ============================================================
+   TRASA RUN — Jugador y retransmisión en el proyector
+   ============================================================ */
+.arcade-game-choices { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.arcade-game-choices article p { min-height: 70px; }
+.arcade-run-game { width: 100%; max-width: 960px; margin: 0 auto; }
+.arcade-run-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 8 / 3;
+  border: 2px solid #789474;
+  border-radius: 12px;
+  background: #26382b;
+  touch-action: manipulation;
+}
+.arcade-run-controls { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; margin-top: 14px; }
+.arcade-run-controls button { padding: 13px 45px; touch-action: manipulation; }
+.arcade-run-controls span { color: #c3d2bd; font-size: 13px; }
+.arcade-run-stage { width: 100%; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.arcade-run-stage .arcade-run-canvas { width: 100%; }
+/* Cuatro recuadros laterales: jugadores + tres rankings independientes. */
+.arcade-screen-sidebar { grid-template-rows: repeat(4, minmax(0, 1fr)); }
+.arcade-sidebar-panel { padding: 8px 14px; }
+.arcade-sidebar-panel h2 { font-size: clamp(18px, 1.7vw, 30px); margin: 0 0 6px; }
+.arcade-rank-row, .arcade-player-row { font-size: clamp(15px, 1.17vw, 22px); margin: 3px 0; }
+@media (max-width: 750px) {
+  .arcade-game-choices { grid-template-columns: 1fr; }
+  .arcade-game-choices article p { min-height: 0; }
+  .arcade-run-controls { justify-content: center; }
+  .arcade-screen-sidebar { gap: 5px; }
+  .arcade-sidebar-panel { padding: 5px 8px; }
+  .arcade-sidebar-panel h2 { font-size: 16px; margin-bottom: 2px; }
+  .arcade-rank-row, .arcade-player-row { font-size: 12px; margin: 1px 0; }
+}
