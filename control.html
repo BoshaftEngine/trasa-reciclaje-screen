@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TRASA · Control de reciclaje</title>
   <link rel="stylesheet" href="css/control.css?v=1">
-  <link rel="stylesheet" href="css/arcade.css?v=2">
+  <link rel="stylesheet" href="css/arcade.css?v=3">
 </head>
 <body>
   <main class="shell">
@@ -57,6 +57,26 @@
       <p id="arcadeControlStatus" class="help">Conectando Arcade…</p>
     </section>
 
+    <section class="panel arcade-control-panel">
+      <h2>ADMINISTRAR PARTICIPANTES</h2>
+      <p class="help">El TOP 5 recoge la mejor puntuación por navegador anónimo, no por IP. Aquí puedes borrar récords, partidas y usuarios con nombres inapropiados. Una sesión bloqueada no podrá volver a participar con ese UID.</p>
+      <label for="arcadeParticipantSelect">Selecciona un participante</label>
+      <div class="arcade-control-feature-row">
+        <select id="arcadeParticipantSelect"><option value="">Cargando participantes…</option></select>
+        <button id="arcadeDeleteParticipant" class="danger">BORRAR Y BLOQUEAR PARTICIPANTE</button>
+      </div>
+      <div class="arcade-control-feature-row arcade-admin-actions">
+        <button id="arcadeClearAll" class="danger">BORRAR TODOS LOS REGISTROS</button>
+      </div>
+      <p class="help">El borrado general elimina todas las partidas, retransmisiones y rankings de Memory y TRASA RUN. Mantiene los bloqueos existentes.</p>
+      <label for="arcadeBannedSelect">Sesiones bloqueadas</label>
+      <div class="arcade-control-feature-row">
+        <select id="arcadeBannedSelect"><option value="">Ninguna</option></select>
+        <button id="arcadeUnbanParticipant">DESBLOQUEAR</button>
+      </div>
+      <p id="arcadeAdminStatus" class="help">Conectando administración…</p>
+    </section>
+
     <section class="panel">
       <h2>Firebase</h2>
       <p class="help">Copia este UID y úsalo en las reglas de Realtime Database.</p>
@@ -64,6 +84,6 @@
     </section>
   </main>
   <script type="module" src="js/control.js?v=4"></script>
-  <script type="module" src="js/arcade-control.js?v=2"></script>
+  <script type="module" src="js/arcade-control.js?v=3"></script>
 </body>
 </html>
