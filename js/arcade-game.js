@@ -1,12 +1,11 @@
 import { MATERIALS } from "./materials.js?v=2";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
-import { GAME_DURATION, RECYCLING_QUESTIONS, shuffle, cleanName } from "./arcade-common.js?v=2";
-import { createRun, stepRun, jumpRun, packRunState, drawRunScene, RUN_W, RUN_H } from "./arcade-run.js";
+import { GAME_DURATION, shuffle, cleanName } from "./arcade-common.js?v=3";
+import { createRun, stepRun, jumpRun, duckRun, packRunState, drawRunScene, RUN_W, RUN_H } from "./arcade-run.js?v=4";
 
 const $ = id => document.getElementById(id);
 const nickInput = $("nickname");
 const memoryBtn = $("startMemory");
-const classifyBtn = $("startClasifica");
 const runBtn = $("startRun");
 const restartBtn = $("backToGames");
 const roomStatus = $("roomStatus");
@@ -23,9 +22,9 @@ const endText = $("endText");
 let firebase;
 let uid = "";
 let roomOpen = false;
+let blocked = false;
 let session = null;
 let timer = null;
-let quizTimeout = null;
 let memoryTimeout = null;
 let lastLiveWrite = 0;
 let liveWrite = Promise.resolve();
@@ -39,21 +38,18 @@ try { nickInput.value = localStorage.getItem("trasa-arcade-nick") || ""; } catch
 
 function notice(text) { roomStatus.textContent = text; }
 function enableButtons() {
-  const enabled = Boolean(firebase && roomOpen && !session);
+  const enabled = Boolean(firebase && roomOpen && !session && !blocked);
   memoryBtn.disabled = !enabled;
-  classifyBtn.disabled = !enabled;
   runBtn.disabled = !enabled;
 }
 
 function clearTimers() {
   clearInterval(timer);
-  clearTimeout(quizTimeout);
   clearTimeout(memoryTimeout);
   cancelAnimationFrame(runFrame);
   runFrame = null;
   runCanvas = null;
   timer = null;
-  quizTimeout = null;
   memoryTimeout = null;
 }
 
@@ -79,21 +75,12 @@ function liveState() {
       timeLeft: secondsLeft()
     };
   }
-  const q = session.questions[session.round] || {};
-  return {
-    round: session.round,
-    icon: q.icon || "♻️",
-    item: q.item || "Partida finalizada",
-    answer: q.answer || "",
-    choices: session.choices || [],
-    chosen: session.chosen || "",
-    timeLeft: secondsLeft()
-  };
+  return {};
 }
 
 function syncLive(force = false, status = "playing") {
-  if (!firebase || !session) return Promise.resolve();
-  const delay = session.gameId === "run" ? 330 : 1600;
+  if (!firebase || !session || blocked) return Promise.resolve();
+  const delay = session.gameId === "run" ? 450 : 1600;
   if (!force && (Date.now() - lastLiveWrite < delay || liveBusy)) return Promise.resolve();
   lastLiveWrite = Date.now();
   const snapshot = {
@@ -115,7 +102,7 @@ function syncLive(force = false, status = "playing") {
 }
 
 async function saveHistory() {
-  if (!firebase || !session) return;
+  if (!firebase || !session || blocked) return;
   const historyRef = firebase.dbMod.push(firebase.dbMod.ref(firebase.db, roomPath(`arcade/history/${session.gameId}/${uid}`)));
   try {
     await firebase.dbMod.set(historyRef, {
@@ -129,7 +116,7 @@ async function saveHistory() {
 }
 
 async function saveHighScore() {
-  if (!firebase || !session) return;
+  if (!firebase || !session || blocked) return;
   const score = session.score;
   const name = session.name;
   const scoreRef = firebase.dbMod.ref(firebase.db, roomPath(`arcade/scores/${session.gameId}/${uid}`));
@@ -144,7 +131,7 @@ async function saveHighScore() {
 }
 
 async function finishGame(reason = "completed") {
-  if (!session || session.finished) return;
+  if (!session || session.finished || blocked) return;
   session.finished = true;
   clearTimers();
   if (reason === "completed") session.score += secondsLeft();
@@ -188,7 +175,7 @@ function renderMemory() {
 }
 
 function flip(index) {
-  if (!session || session.gameId !== "memory" || session.finished || session.locked || !roomOpen) return;
+  if (!session || session.gameId !== "memory" || session.finished || session.locked || !roomOpen || blocked) return;
   if (session.open.includes(index) || session.matched.includes(index)) return;
   session.open.push(index);
   if (session.open.length === 2) {
@@ -219,69 +206,10 @@ function flip(index) {
   }
 }
 
-function nextQuizQuestion() {
-  if (!session || session.gameId !== "clasifica" || session.finished) return;
-  if (session.round >= session.questions.length) {
-    finishGame("completed");
-    return;
-  }
-  const answer = session.questions[session.round].answer;
-  session.choices = shuffle([answer, ...shuffle(MATERIALS.filter(m => m.id !== answer).map(m => m.id)).slice(0, 3)]);
-  session.chosen = "";
-  session.locked = false;
-  renderQuiz();
-  syncLive(true);
-}
-
-function renderQuiz() {
-  gameRoot.replaceChildren();
-  const q = session.questions[session.round];
-  const wrapper = document.createElement("div");
-  wrapper.className = "arcade-player-quiz";
-  const counter = document.createElement("div");
-  counter.className = "arcade-player-quiz-round";
-  counter.textContent = `PREGUNTA ${session.round + 1} / ${session.questions.length}`;
-  const emoji = document.createElement("div");
-  emoji.className = "arcade-player-quiz-icon";
-  emoji.textContent = q.icon;
-  const prompt = document.createElement("h2");
-  prompt.textContent = q.item;
-  const explain = document.createElement("p");
-  explain.textContent = "¿Qué material corresponde a este residuo?";
-  const options = document.createElement("div");
-  options.className = "arcade-player-quiz-choices";
-  for (const id of session.choices) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = matById[id]?.name || id;
-    b.disabled = session.locked;
-    b.className = `arcade-answer-btn ${session.chosen === id ? (id === q.answer ? "good" : "bad") : ""}`;
-    b.onclick = () => answerQuiz(id);
-    options.append(b);
-  }
-  wrapper.append(counter, emoji, prompt, explain, options);
-  gameRoot.append(wrapper);
-  gameHeader();
-}
-
-function answerQuiz(id) {
-  if (!session || session.gameId !== "clasifica" || session.finished || session.locked || !roomOpen) return;
-  session.locked = true;
-  session.chosen = id;
-  if (id === session.questions[session.round].answer) session.score += 10;
-  renderQuiz();
-  syncLive(true);
-  quizTimeout = setTimeout(() => {
-    if (!session || session.finished) return;
-    session.round++;
-    nextQuizQuestion();
-  }, 1200);
-}
-
-
 /* ============================================================
-   TRASA RUN — el trabajador salta obstáculos en una pista sin fin.
-   El lienzo local anima a 60 fps y el proyector recibe 3 estados/s.
+   TRASA RUN — salta obstáculos en el suelo o agáchate ante bolsas
+   voladoras. Los controles de agacharse se mantienen pulsados.
+   El lienzo local anima a 60 fps y el proyector recibe ~2 estados/s.
    ============================================================ */
 function renderRun() {
   gameRoot.replaceChildren();
@@ -298,16 +226,32 @@ function renderRun() {
   });
   const controls = document.createElement("div");
   controls.className = "arcade-run-controls";
-  const button = document.createElement("button");
-  button.type = "button";
-  button.textContent = "⬆ SALTAR";
-  button.addEventListener("pointerdown", event => {
+  const actions = document.createElement("div");
+  actions.className = "arcade-run-action-buttons";
+  const jumpButton = document.createElement("button");
+  jumpButton.type = "button";
+  jumpButton.textContent = "⬆ SALTAR";
+  jumpButton.addEventListener("pointerdown", event => {
     event.preventDefault();
     jumpFromPlayer();
   });
+  const duckButton = document.createElement("button");
+  duckButton.type = "button";
+  duckButton.className = "arcade-run-duck-button";
+  duckButton.textContent = "⬇ AGACHARSE";
+  duckButton.setAttribute("aria-label", "Mantén pulsado para agacharte bajo las bolsas voladoras");
+  duckButton.addEventListener("pointerdown", event => {
+    event.preventDefault();
+    duckButton.setPointerCapture(event.pointerId);
+    duckFromPlayer(true);
+  });
+  for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    duckButton.addEventListener(eventName, () => duckFromPlayer(false));
+  }
   const hint = document.createElement("span");
-  hint.textContent = "ORDENADOR: ESPACIO / ↑ / W · MÓVIL: TOCA LA PANTALLA";
-  controls.append(button, hint);
+  hint.textContent = "SALTAR: ESPACIO / ↑ / W · AGACHARSE: ↓ / S (MANTENER) · MÓVIL: BOTONES";
+  actions.append(jumpButton, duckButton);
+  controls.append(actions, hint);
   container.append(canvas, controls);
   gameRoot.append(container);
   runCanvas = canvas;
@@ -316,20 +260,35 @@ function renderRun() {
 }
 
 function jumpFromPlayer() {
-  if (!session || session.gameId !== "run" || session.finished || !roomOpen) return;
+  if (!session || session.gameId !== "run" || session.finished || !roomOpen || blocked) return;
   if (jumpRun(session.runner)) syncLive(true);
 }
 
+function duckFromPlayer(pressed) {
+  if (!session || session.gameId !== "run" || session.finished) return;
+  duckRun(session.runner, pressed);
+  syncLive(true);
+}
+
 window.addEventListener("keydown", event => {
-  if (!session || session.gameId !== "run" || session.finished || !roomOpen || event.repeat) return;
+  if (!session || session.gameId !== "run" || session.finished || !roomOpen || blocked) return;
   if (["Space", "ArrowUp", "KeyW"].includes(event.code)) {
     event.preventDefault();
-    jumpFromPlayer();
+    if (!event.repeat) jumpFromPlayer();
+  } else if (["ArrowDown", "KeyS"].includes(event.code)) {
+    event.preventDefault();
+    if (!session.runner.ducking) duckFromPlayer(true);
   }
 });
 
+window.addEventListener("keyup", event => {
+  if (["ArrowDown", "KeyS"].includes(event.code)) duckFromPlayer(false);
+});
+
+window.addEventListener("blur", () => duckFromPlayer(false));
+
 function runAnimation(timestamp) {
-  if (!session || session.gameId !== "run" || session.finished || !roomOpen) return;
+  if (!session || session.gameId !== "run" || session.finished || !roomOpen || blocked) return;
   const delta = runPreviousTime ? (timestamp - runPreviousTime) / 1000 : 0;
   runPreviousTime = timestamp;
   stepRun(session.runner, delta);
@@ -346,7 +305,7 @@ function runAnimation(timestamp) {
 }
 
 function startGame(gameId) {
-  if (!firebase || !roomOpen || session) return;
+  if (!firebase || !roomOpen || session || blocked) return;
   const nick = cleanName(nickInput.value);
   if (nick.length < 2) {
     notice("Escribe un nombre de al menos 2 caracteres.");
@@ -368,20 +327,13 @@ function startGame(gameId) {
     session.matched = [];
   } else if (gameId === "run") {
     session.runner = createRun();
-  } else {
-    session.questions = shuffle(RECYCLING_QUESTIONS.filter(q => matById[q.answer])).slice(0, 10);
-    session.round = 0;
-    session.choices = [];
-    session.chosen = "";
   }
-  title.textContent = gameId === "memory" ? "MEMORY DE MATERIALES"
-    : gameId === "clasifica" ? "CLASIFICA RESIDUOS" : "TRASA RUN";
+  title.textContent = gameId === "memory" ? "MEMORY DE MATERIALES" : "TRASA RUN";
   lobby.classList.add("hidden");
   playArea.classList.remove("hidden");
   gameRoot.classList.remove("hidden");
   endBlock.classList.add("hidden");
   if (gameId === "memory") { renderMemory(); syncLive(true); }
-  else if (gameId === "clasifica") nextQuizQuestion();
   else {
     runPreviousTime = 0;
     renderRun();
@@ -410,7 +362,6 @@ function backToGames() {
 
 async function init() {
   memoryBtn.onclick = () => startGame("memory");
-  classifyBtn.onclick = () => startGame("clasifica");
   runBtn.onclick = () => startGame("run");
   restartBtn.onclick = backToGames;
   enableButtons();
@@ -419,6 +370,38 @@ async function init() {
     firebase = await loadFirebase();
     const account = await firebase.authMod.signInAnonymously(firebase.auth);
     uid = account.user.uid;
+    // Si CONTROL expulsa y bloquea esta sesión, se detiene de inmediato.
+    firebase.dbMod.onValue(
+      firebase.dbMod.ref(firebase.db, roomPath(`arcade/bans/${uid}`)),
+      snap => {
+        blocked = snap.exists();
+        if (blocked) {
+          clearTimers();
+          session = null;
+          playArea.classList.add("hidden");
+          lobby.classList.remove("hidden");
+          notice("Tu sesión no puede participar en TRASA Arcade.");
+        } else {
+          notice(roomOpen ? "SALA ABIERTA · ¡Puedes jugar!" : "SALA CERRADA · Esperando a TRASA.");
+        }
+        enableButtons();
+      }
+    );
+    // Cuando CONTROL borra todos los resultados, también cierra las partidas en marcha.
+    firebase.dbMod.onValue(
+      firebase.dbMod.ref(firebase.db, roomPath("arcade/resetAt")),
+      snap => {
+        const resetAt = Number(snap.val() || 0);
+        if (session && !session.finished && resetAt >= session.startedAt) {
+          clearTimers();
+          session = null;
+          playArea.classList.add("hidden");
+          lobby.classList.remove("hidden");
+          notice("TRASA ha reiniciado los registros. Puedes empezar otra partida.");
+          enableButtons();
+        }
+      }
+    );
     firebase.dbMod.onValue(firebase.dbMod.ref(firebase.db, roomPath("display")), snap => {
       roomOpen = (snap.val() || {}).mode === "arcade";
       if (!roomOpen && session && !session.finished) {
@@ -428,7 +411,7 @@ async function init() {
         playArea.classList.add("hidden");
         lobby.classList.remove("hidden");
       }
-      notice(roomOpen ? "SALA ABIERTA · ¡Puedes jugar!" : "SALA CERRADA · Esperando a que TRASA active Arcade.");
+      if (!blocked) notice(roomOpen ? "SALA ABIERTA · ¡Puedes jugar!" : "SALA CERRADA · Esperando a que TRASA active Arcade.");
       enableButtons();
     });
     // Identifica la sesión que sigue abierta en la sala para que no desaparezca del proyector.

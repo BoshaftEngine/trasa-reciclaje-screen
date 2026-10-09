@@ -1,14 +1,13 @@
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
 import { MATERIALS } from "./materials.js?v=2";
-import { readLive, safeState, scoreRanking, ARCADE_GAMES } from "./arcade-common.js?v=2";
-import { drawRunScene, RUN_W, RUN_H } from "./arcade-run.js";
+import { readLive, safeState, scoreRanking, ARCADE_GAMES } from "./arcade-common.js?v=3";
+import { drawRunScene, RUN_W, RUN_H } from "./arcade-run.js?v=4";
 
 const arcadeView = document.getElementById("arcadeView");
 const activePlayer = document.getElementById("arcadeFeaturedName");
 const stage = document.getElementById("arcadeStage");
 const liveRoster = document.getElementById("arcadePlayers");
 const memoryRank = document.getElementById("arcadeMemoryRank");
-const classifyRank = document.getElementById("arcadeClassifyRank");
 const runRank = document.getElementById("arcadeRunRank");
 const gameLink = document.getElementById("arcadeGameUrl");
 const gameLinkText = new URL("juego.html", document.baseURI).href;
@@ -90,30 +89,6 @@ function memoryStage(player, state) {
   return group;
 }
 
-function classifyStage(player, state) {
-  const group = document.createElement("div");
-  group.className = "arcade-quiz-stage";
-  const info = document.createElement("div");
-  info.className = "arcade-stage-meta";
-  info.textContent = `PUNTOS: ${player.score}  ·  RONDA: ${Math.min(10, Number(state.round || 0) + 1)}/10  ·  TIEMPO: ${Math.max(0, state.timeLeft || 0)} s`;
-  const icon = document.createElement("div");
-  icon.className = "arcade-quiz-icon";
-  icon.textContent = state.icon || "♻️";
-  const prompt = document.createElement("h3");
-  prompt.textContent = state.item || "Preparando pregunta…";
-  const answers = document.createElement("div");
-  answers.className = "arcade-quiz-answers";
-  (state.choices || []).forEach(id => {
-    const el = document.createElement("div");
-    el.className = `arcade-quiz-answer ${state.chosen === id ? (id === state.answer ? "good" : "bad") : ""}`;
-    el.textContent = nameFor[id] || id;
-    answers.append(el);
-  });
-  group.append(info, icon, prompt, answers);
-  return group;
-}
-
-
 function stopRunSpectator() {
   if (runSpectatorFrame !== null) cancelAnimationFrame(runSpectatorFrame);
   runSpectatorFrame = null;
@@ -144,6 +119,7 @@ function runStage(player, state) {
   if (!runSpectator || runSpectator.uid !== player.uid) {
     stopRunSpectator();
     stage.replaceChildren();
+    stage.dataset.content = "run";
     wrapper = document.createElement("div");
     wrapper.className = "arcade-run-stage";
     const info = document.createElement("div");
@@ -172,15 +148,35 @@ function renderStage() {
   const current = requested || livePlayers[0];
   if (!current) {
     stopRunSpectator();
-    stage.replaceChildren();
     activePlayer.textContent = "ESPERANDO JUGADORES";
-    const msg = document.createElement("div");
-    msg.className = "arcade-empty-stage";
-    msg.innerHTML = '<div class="arcade-wait-symbol">♻</div><p>Copia la dirección de abajo y juega desde tu navegador.</p>';
-    stage.append(msg);
+
+    // No reconstruir el QR si la sala sigue vacía: evita parpadeos.
+    if (stage.dataset.content !== "join-lobby") {
+      stage.replaceChildren();
+      const waiting = document.createElement("div");
+      waiting.className = "arcade-empty-stage arcade-join-lobby";
+
+      const title = document.createElement("div");
+      title.className = "arcade-join-lobby-title";
+      title.textContent = "ESCANEA PARA JUGAR";
+
+      const qr = document.createElement("img");
+      qr.className = "arcade-join-lobby-qr";
+      qr.src = "assets/qr-trasa-arcade.png";
+      qr.alt = "Código QR para abrir TRASA Arcade";
+      qr.width = 256;
+      qr.height = 256;
+
+      const text = document.createElement("p");
+      text.textContent = "ABRE EL ENLACE EN TU MÓVIL Y ELIGE UN MINIJUEGO";
+
+      waiting.append(title, qr, text);
+      stage.append(waiting);
+      stage.dataset.content = "join-lobby";
+    }
     return;
   }
-  activePlayer.textContent = `${current.name.toUpperCase()} · ${current.gameId === "memory" ? "MEMORY" : current.gameId === "clasifica" ? "CLASIFICA" : "TRASA RUN"}`;
+  activePlayer.textContent = `${current.name.toUpperCase()} · ${current.gameId === "memory" ? "MEMORY" : "TRASA RUN"}`;
   const state = safeState(current.state);
   if (current.gameId === "run") {
     runStage(current, state);
@@ -188,7 +184,8 @@ function renderStage() {
   }
   stopRunSpectator();
   stage.replaceChildren();
-  stage.append(current.gameId === "memory" ? memoryStage(current, state) : classifyStage(current, state));
+  stage.dataset.content = "memory";
+  stage.append(memoryStage(current, state));
 }
 
 function redraw() {
@@ -212,7 +209,6 @@ async function init() {
       redraw();
     });
     f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/scores/memory")), snap => buildRanking(memoryRank, snap.val()));
-    f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/scores/clasifica")), snap => buildRanking(classifyRank, snap.val()));
     f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/scores/run")), snap => buildRanking(runRank, snap.val()));
     // Actualiza el estado de los jugadores inactivos aunque no lleguen escrituras nuevas.
     setInterval(() => { if (!arcadeView.classList.contains("hidden")) redraw(); }, 12000);

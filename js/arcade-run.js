@@ -1,5 +1,45 @@
 /* TRASA RUN: física y dibujo comunes para jugador y proyector.
-   No requiere imágenes, librerías ni peticiones externas. */
+   PERSONALIZACIÓN: reemplaza las imágenes de assets/trasa-run/ por tus PNG.
+   Si alguna falta, se dibuja el elemento original como respaldo.
+   No cambia la física ni las dimensiones de las colisiones. */
+
+// Nombres de archivo que puedes sustituir en GitHub sin tocar este JS.
+export const RUN_IMAGE_PATHS = {
+  fondo: "assets/trasa-run/fondo.png",
+  trabajadorCorre1: "assets/trasa-run/trabajador-corre-1.png",
+  trabajadorCorre2: "assets/trasa-run/trabajador-corre-2.png",
+  trabajadorSalta: "assets/trasa-run/trabajador-salta.png",
+  trabajadorAgachado: "assets/trasa-run/trabajador-agachado.png",
+  cono: "assets/trasa-run/cono.png",
+  neumatico: "assets/trasa-run/neumatico.png",
+  barril: "assets/trasa-run/barril.png",
+  contenedor: "assets/trasa-run/contenedor.png",
+  bolsaBasura: "assets/trasa-run/bolsa-basura.png"
+};
+
+const loadedRunImages = {};
+if (typeof Image !== "undefined") {
+  for (const [key, url] of Object.entries(RUN_IMAGE_PATHS)) {
+    const img = new Image();
+    img.onload = () => { loadedRunImages[key] = img; };
+    img.onerror = () => {}; // Si falta una imagen, se mantiene el dibujo original.
+    img.src = url + "?v=4"; // Incrementa v= si cambias los PNG y ves sprites antiguos.
+  }
+}
+
+function drawSprite(ctx, key, x, y, width, height) {
+  const img = loadedRunImages[key];
+  if (!img) return false;
+  ctx.drawImage(img, x, y, width, height);
+  return true;
+}
+
+function drawCover(ctx, img, x, y, w, h) {
+  const scale = Math.max(w / img.width, h / img.height);
+  const iw = img.width * scale, ih = img.height * scale;
+  ctx.drawImage(img, x + (w-iw)/2, y + (h-ih)/2, iw, ih);
+}
+
 export const RUN_W = 960;
 export const RUN_H = 360;
 export const RUN_GROUND = 288;
@@ -7,18 +47,37 @@ export const RUN_X = 132;
 export const RUN_PLAYER_H = 65;
 const RUN_GRAVITY = 1850;
 const RUN_JUMP = -745;
-const TYPES = ["cono", "neumatico", "barril", "contenedor"];
+const GROUND_TYPES = ["cono", "neumatico", "barril", "contenedor"];
+const AIR_TYPE = "bolsaBasura";
+const RUN_FLOOR_Y = RUN_GROUND - RUN_PLAYER_H;
+const RUN_CROUCH_H = 34;
+// Las bolsas pasan lo bastante bajas para rozar a un corredor erguido,
+// pero lo bastante altas para poder esquivarlas agachándose.
+const BAG_TOP = RUN_GROUND - 84;
 export const RUN_OBSTACLES = {
   cono: { width: 34, height: 43 },
   neumatico: { width: 41, height: 38 },
   barril: { width: 43, height: 56 },
-  contenedor: { width: 65, height: 48 }
+  contenedor: { width: 65, height: 48 },
+  bolsaBasura: { width: 58, height: 52, air: true }
 };
+
+function onGround(run) {
+  return Math.abs(run.y - RUN_FLOOR_Y) <= .75 && run.vy === 0;
+}
+
+function obstacleTop(o, time = 0) {
+  const dims = RUN_OBSTACLES[o.type];
+  if (!dims?.air) return RUN_GROUND - dims.height;
+  // Movimiento suave flotante, idéntico en el jugador y en el proyector.
+  return BAG_TOP + Math.sin(Number(time || 0) * 4 + Number(o.phase || 0)) * 4;
+}
 
 export function createRun() {
   return {
-    y: RUN_GROUND - RUN_PLAYER_H,
+    y: RUN_FLOOR_Y,
     vy: 0,
+    ducking: false,
     distance: 0,
     score: 0,
     speed: 340,
@@ -30,40 +89,57 @@ export function createRun() {
 }
 
 export function jumpRun(run) {
-  if (!run || run.lost || (Math.abs(run.y - (RUN_GROUND - RUN_PLAYER_H)) > .75 || run.vy !== 0)) return false;
+  if (!run || run.lost || run.ducking || !onGround(run)) return false;
   run.vy = RUN_JUMP;
   return true;
+}
+
+/** Pulsación sostenida: S, flecha abajo o botón de móvil. */
+export function duckRun(run, pressed) {
+  if (!run || run.lost) return;
+  run.ducking = Boolean(pressed);
 }
 
 export function stepRun(run, dt, random = Math.random) {
   if (run.lost) return;
   dt = Math.max(0, Math.min(.04, Number(dt) || 0));
   run.time += dt;
-  run.speed = Math.min(655, 340 + run.time * 4.6);
+  // Más rápido que la versión anterior: 340 inicial, +16 cada segundo,
+  // alcanza 660 a los 20 s y el máximo de 900 sobre los 35 s.
+  run.speed = Math.min(900, 340 + run.time * 16);
   run.distance += run.speed * dt;
   run.score = Math.floor(run.distance / 12);
   run.vy += RUN_GRAVITY * dt;
   run.y += run.vy * dt;
-  const floor = RUN_GROUND - RUN_PLAYER_H;
-  if (run.y >= floor) {
-    run.y = floor;
+  if (run.y >= RUN_FLOOR_Y) {
+    run.y = RUN_FLOOR_Y;
     run.vy = 0;
   }
   run.nextObstacle -= dt;
   if (run.nextObstacle <= 0) {
-    const type = TYPES[Math.floor(random() * TYPES.length)];
-    run.obstacles.push({ type, x: RUN_W + 12 });
-    // La separación disminuye progresivamente, con margen para saltar.
-    run.nextObstacle = Math.max(.98, 1.55 - run.time * .004) + random() * .48;
+    // Bolsas voladoras a partir de unos segundos de partida.
+    // La elección es aleatoria; nunca hay un obstáculo de suelo y uno
+    // aéreo superpuestos en la misma aparición.
+    const airborne = run.time >= 4 && random() < .34;
+    const type = airborne ? AIR_TYPE : GROUND_TYPES[Math.floor(random() * GROUND_TYPES.length)];
+    run.obstacles.push({ type, x: RUN_W + 12, ...(airborne ? { phase: random() * 6.28 } : {}) });
+    // Aparecen algo más a menudo con el tiempo, dejando margen para reaccionar.
+    run.nextObstacle = Math.max(.94, 1.47 - run.time * .010) + random() * .42;
   }
   for (const o of run.obstacles) o.x -= run.speed * dt;
   run.obstacles = run.obstacles.filter(o => o.x > -110);
-  const px = RUN_X + 10, py = run.y + 9, pw = 26, ph = RUN_PLAYER_H - 12;
+  const crouched = run.ducking && onGround(run);
+  const px = RUN_X + 10;
+  const py = crouched ? RUN_GROUND - RUN_CROUCH_H + 5 : run.y + 9;
+  const pw = crouched ? 36 : 26;
+  const ph = crouched ? RUN_CROUCH_H - 9 : RUN_PLAYER_H - 12;
   for (const o of run.obstacles) {
     const d = RUN_OBSTACLES[o.type];
     if (!d) continue;
-    const ox = o.x + 5, oy = RUN_GROUND - d.height + 5;
-    if (px < ox + d.width - 10 && px + pw > ox && py < RUN_GROUND - 5 && py + ph > oy) {
+    const ox = o.x + 5;
+    const oy = obstacleTop(o, run.time) + 4;
+    const ow = d.width - 10, oh = d.height - 8;
+    if (px < ox + ow && px + pw > ox && py < oy + oh && py + ph > oy) {
       run.lost = true;
       break;
     }
@@ -74,10 +150,14 @@ export function packRunState(run) {
   return {
     y: Math.round(run.y),
     vy: Math.round(run.vy),
+    ducking: Boolean(run.ducking),
     distance: Math.round(run.distance),
     speed: Math.round(run.speed),
     time: Math.round(run.time),
-    obstacles: run.obstacles.map(o => ({ x: Math.round(o.x), type: o.type }))
+    obstacles: run.obstacles.map(o => ({
+      x: Math.round(o.x), type: o.type,
+      ...(o.type === AIR_TYPE ? { phase: Number(o.phase || 0) } : {})
+    }))
   };
 }
 
@@ -93,12 +173,27 @@ function roundRect(ctx, x, y, w, h, r, color) {
   ctx.closePath(); ctx.fill();
 }
 
-function drawWorker(ctx, x, y, t = 0) {
+function drawWorker(ctx, x, y, t = 0, ducking = false) {
   const onGround = Math.abs(y - (RUN_GROUND - RUN_PLAYER_H)) < 1;
+  const crouched = ducking && onGround;
   const stride = onGround ? Math.sin(t * 16) * 9 : 0;
   // Sombra sobre el asfalto
   ctx.fillStyle = "rgba(0,0,0,.28)";
   ctx.beginPath(); ctx.ellipse(x + 23, RUN_GROUND + 1, onGround ? 26 : 16, 5, 0, 0, Math.PI * 2); ctx.fill();
+  if (crouched) {
+    const crouchY = RUN_GROUND - RUN_CROUCH_H;
+    if (drawSprite(ctx, "trabajadorAgachado", x - 2, crouchY, 65, RUN_CROUCH_H)) return;
+    // Respaldo si el usuario todavía no ha subido su PNG agachado.
+    roundRect(ctx, x+10, crouchY+11, 44, 20, 6, "#647c58");
+    ctx.fillStyle="#d8e7a5"; ctx.fillRect(x+12,crouchY+18,40,4);
+    roundRect(ctx,x+19,crouchY,21,17,7,"#c8a581");
+    roundRect(ctx,x+17,crouchY,26,8,3,"#b9cf8e");
+    ctx.fillStyle="#dce8d6";ctx.font="bold 8px Arial";ctx.fillText("TRASA",x+15,crouchY+29);
+    return;
+  }
+  // Si hay sprite personalizado, se muestra con el mismo tamaño del trabajador.
+  const spriteKey = onGround ? (Math.floor(t * 8) % 2 ? "trabajadorCorre2" : "trabajadorCorre1") : "trabajadorSalta";
+  if (drawSprite(ctx, spriteKey, x, y, 54, RUN_PLAYER_H)) return;
   // Botas y piernas en carrera
   ctx.strokeStyle = "#151c1c";
   ctx.lineWidth = 9;
@@ -127,11 +222,23 @@ function drawWorker(ctx, x, y, t = 0) {
   ctx.fillStyle = "#263028"; ctx.fillRect(x + 31, y + 14, 2.5, 3);
 }
 
-function obstacle(ctx, o) {
+function obstacle(ctx, o, time = 0) {
   const d = RUN_OBSTACLES[o.type];
   if (!d) return;
-  const x = o.x, y = RUN_GROUND - d.height;
-  if (o.type === "cono") {
+  const x = o.x, y = obstacleTop(o, time);
+  if (drawSprite(ctx, o.type, x, y, d.width, d.height)) return;
+  if (o.type === AIR_TYPE) {
+    // Bolsa de basura movida por el viento; se esquiva agachándose.
+    ctx.fillStyle = "rgba(12,19,16,.22)";
+    ctx.beginPath();ctx.ellipse(x+d.width/2,RUN_GROUND+1,24,5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#252c2a";
+    ctx.beginPath();ctx.moveTo(x+24,y+9);ctx.quadraticCurveTo(x+10,y+14,x+5,y+34);
+    ctx.quadraticCurveTo(x+4,y+52,x+30,y+50);ctx.quadraticCurveTo(x+55,y+49,x+53,y+32);
+    ctx.quadraticCurveTo(x+47,y+14,x+34,y+9);ctx.closePath();ctx.fill();
+    roundRect(ctx,x+23,y+2,14,12,5,"#47584e");
+    ctx.strokeStyle="#9eaca0";ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x-10,y+23);ctx.lineTo(x+2,y+18);ctx.moveTo(x+56,y+15);ctx.lineTo(x+69,y+11);ctx.stroke();
+  } else if (o.type === "cono") {
     ctx.fillStyle = "#e89c47";
     ctx.beginPath(); ctx.moveTo(x + d.width/2, y); ctx.lineTo(x + d.width-5, RUN_GROUND - 7); ctx.lineTo(x + 5, RUN_GROUND - 7); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = "#fff0ce"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x + 11, y + 27); ctx.lineTo(x + 24, y + 27); ctx.stroke();
@@ -160,9 +267,11 @@ export function drawRunScene(canvas, source = {}, options = {}) {
   sky.addColorStop(0,"#243328"); sky.addColorStop(1,"#354b3b");
   ctx.fillStyle = sky; ctx.fillRect(0, 0, RUN_W, RUN_GROUND);
   ctx.fillStyle = "rgba(205,230,184,.10)"; ctx.beginPath(); ctx.arc(795,70,43,0,Math.PI*2);ctx.fill();
-  // Fábrica de fondo (parallax, sin assets)
+  // Fondo: tu imagen personalizada o la fábrica dibujada original.
+  const background = loadedRunImages.fondo;
+  if (background) drawCover(ctx, background, 0, 0, RUN_W, RUN_GROUND);
   const drift = Number(source.distance || 0) * .11;
-  for(let i=-1;i<8;i++){
+  if (!background) for(let i=-1;i<8;i++){
     const x=(i*167 - drift%167);
     ctx.fillStyle = i%2 ? "#233b2d":"#2a4132";
     ctx.fillRect(x,RUN_GROUND-142,112,144);
@@ -175,8 +284,8 @@ export function drawRunScene(canvas, source = {}, options = {}) {
   ctx.fillStyle = "#5b6e59";
   const offset = (Number(source.distance || 0)*1.15)%104;
   for(let x=-104+offset;x<RUN_W;x+=104) ctx.fillRect(x,RUN_GROUND+39,58,5);
-  for (const o of source.obstacles || []) obstacle(ctx,o);
-  drawWorker(ctx,RUN_X,Number(source.y ?? (RUN_GROUND-RUN_PLAYER_H)),Number(source.time || 0));
+  for (const o of source.obstacles || []) obstacle(ctx,o,Number(source.time || 0));
+  drawWorker(ctx,RUN_X,Number(source.y ?? RUN_FLOOR_Y),Number(source.time || 0),Boolean(source.ducking));
   roundRect(ctx,17,16,168,34,9,"rgba(8,19,11,.66)");
   ctx.fillStyle="#d5e5cd"; ctx.font="bold 19px Arial"; ctx.fillText("TRASA RUN",34,40);
   if (options.gameOver){
