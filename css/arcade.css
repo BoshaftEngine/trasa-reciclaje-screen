@@ -191,7 +191,7 @@
 /* ============================================================
    TRASA RUN — Jugador y retransmisión en el proyector
    ============================================================ */
-.arcade-game-choices { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.arcade-game-choices { grid-template-columns: repeat(2, minmax(0,1fr)); }
 .arcade-game-choices article p { min-height: 70px; }
 .arcade-run-game { width: 100%; max-width: 960px; margin: 0 auto; }
 .arcade-run-canvas {
@@ -205,12 +205,15 @@
   touch-action: manipulation;
 }
 .arcade-run-controls { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; margin-top: 14px; }
-.arcade-run-controls button { padding: 13px 45px; touch-action: manipulation; }
+.arcade-run-action-buttons { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+.arcade-run-controls button { padding: 13px 27px; touch-action: none; min-width: 145px; user-select:none; -webkit-user-select:none; }
+.arcade-run-duck-button { background:#536747; border-color:#8ca481; }
+.arcade-run-duck-button:active { background:#829c72; }
 .arcade-run-controls span { color: #c3d2bd; font-size: 13px; }
 .arcade-run-stage { width: 100%; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .arcade-run-stage .arcade-run-canvas { width: 100%; }
-/* Cuatro recuadros laterales: jugadores + tres rankings independientes. */
-.arcade-screen-sidebar { grid-template-rows: repeat(4, minmax(0, 1fr)); }
+/* Tres recuadros laterales: jugadores + dos TOP 5. */
+.arcade-screen-sidebar { grid-template-rows: repeat(3, minmax(0, 1fr)); }
 .arcade-sidebar-panel { padding: 8px 14px; }
 .arcade-sidebar-panel h2 { font-size: clamp(18px, 1.7vw, 30px); margin: 0 0 6px; }
 .arcade-rank-row, .arcade-player-row { font-size: clamp(15px, 1.17vw, 22px); margin: 3px 0; }
@@ -218,8 +221,136 @@
   .arcade-game-choices { grid-template-columns: 1fr; }
   .arcade-game-choices article p { min-height: 0; }
   .arcade-run-controls { justify-content: center; }
+  .arcade-run-controls span { text-align:center; }
+  .arcade-run-action-buttons { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .arcade-run-action-buttons button { min-width:0; padding:16px 8px; font-size:15px; }
   .arcade-screen-sidebar { gap: 5px; }
   .arcade-sidebar-panel { padding: 5px 8px; }
   .arcade-sidebar-panel h2 { font-size: 16px; margin-bottom: 2px; }
   .arcade-rank-row, .arcade-player-row { font-size: 12px; margin: 1px 0; }
+}
+
+/* Moderación de participantes (CONTROL) */
+.arcade-control-panel > label { display: block; font-size: 14px; margin: 12px 0 8px; color: #d3e1d0; }
+.arcade-control-panel select { flex: 1; min-width: 180px; padding: 11px; color: #edf3ee; background: #0d120e; border: 1px solid #465747; border-radius: 8px; }
+.arcade-admin-actions { margin: 16px 0; }
+.arcade-control-panel .danger { background: #422022; border-color: #924a4a; }
+
+
+/* ============================================================
+   QR DE ACCESO A TRASA ARCADE (V3)
+   Grande mientras espera jugadores y pequeño durante partidas.
+   ============================================================ */
+
+/* Mantener toda la pantalla y el pie dentro de la altura del proyector. */
+#arcadeView {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(12px, 1.5vh, 23px) clamp(16px, 2vw, 35px) 14px;
+}
+.arcade-screen-header { flex: 0 0 auto; }
+.arcade-screen-columns {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  padding-top: 12px;
+}
+.arcade-screen-footer {
+  position: static;
+  flex: 0 0 auto;
+  min-height: 114px;
+  width: 100%;
+  padding-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  white-space: normal;
+}
+.arcade-join-qr-small {
+  width: 106px;
+  height: 106px;
+  flex: 0 0 106px;
+  padding: 4px;
+  border-radius: 9px;
+  background: #fff;
+}
+.arcade-join-qr-small img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+}
+.arcade-join-instructions {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+.arcade-join-title {
+  font-size: clamp(19px, 1.7vw, 31px);
+  line-height: 1.1;
+  letter-spacing: .035em;
+}
+.arcade-join-instructions strong {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(10px, 1vw, 17px);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  color: #a7c3a4;
+}
+.arcade-screen-cta {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+/* Vista de espera: QR grande para escanear desde la sala. */
+.arcade-join-lobby {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+.arcade-join-lobby-title {
+  font-size: clamp(32px, 3vw, 56px);
+  color: #d6e7d0;
+}
+.arcade-join-lobby-qr {
+  display: block;
+  width: clamp(160px, 18vw, 280px);
+  max-height: 46vh;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: white;
+  padding: 5px;
+  border: 2px solid #c9e0c7;
+  border-radius: 8px;
+}
+.arcade-join-lobby p {
+  margin: 0;
+  font-size: clamp(19px, 1.7vw, 30px);
+  line-height: 1.2;
+}
+
+/* Ajustes para proyectores con ventanas pequeñas o proporción no habitual. */
+@media (max-width: 900px) {
+  .arcade-screen-footer {
+    gap: 9px;
+    min-height: 89px;
+  }
+  .arcade-join-qr-small { width: 78px; height: 78px; flex-basis: 78px; }
+  .arcade-join-title { font-size: 19px; }
+  .arcade-screen-cta { display: none; }
+  .arcade-join-lobby-qr { width: clamp(130px, 20vw, 210px); }
+}
+@media (max-height: 680px) {
+  .arcade-screen-footer { min-height: 70px; padding-top: 6px; }
+  .arcade-join-qr-small { width: 64px; height: 64px; flex-basis: 64px; }
+  .arcade-join-lobby-qr { max-height: 35vh; }
 }
