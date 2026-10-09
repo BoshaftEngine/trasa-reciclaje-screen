@@ -409,8 +409,12 @@ export function drawRunScene(canvas, source = {}, options = {}) {
   ctx.fillStyle = "#111a15"; ctx.fillRect(0,RUN_GROUND,RUN_W,RUN_H-RUN_GROUND);
   ctx.fillStyle = "#738c70"; ctx.fillRect(0,RUN_GROUND,RUN_W,5);
   ctx.fillStyle = "#5b6e59";
-  const offset = (Number(source.distance || 0)*1.15)%104;
-  for(let x=-104+offset;x<RUN_W;x+=104) ctx.fillRect(x,RUN_GROUND+39,58,5);
+  // El personaje avanza hacia la derecha: las marcas del suelo
+  // deben desplazarse hacia la izquierda, igual que los obstáculos.
+  const offset = (Number(source.distance || 0) * 1.15) % 104;
+  for (let x = -104 - offset; x < RUN_W; x += 104) {
+    ctx.fillRect(x, RUN_GROUND + 39, 58, 5);
+  }
   // Viento visible tanto para el jugador como para los espectadores.
   const windPhase = source.wind?.phase || "idle";
   if (windPhase === "gust") {
@@ -421,9 +425,13 @@ export function drawRunScene(canvas, source = {}, options = {}) {
     for (let i = 0; i < 18; i++) {
       const x = ((i * 107 - t * 360) % 1120 + 1120) % 1120 - 85;
       const y = 70 + (i * 37) % 193;
+      // La ráfaga se desplaza de derecha a izquierda (x disminuye).
+      // Inclinar también la línea hacia la izquierda evita la
+      // sensación visual de que el viento sopla hacia la derecha.
+      const length = 34 + (i % 3) * 15;
       ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + 34 + (i % 3) * 15, y - 7);
+      ctx.moveTo(x + length, y + 7);
+      ctx.lineTo(x, y);
       ctx.stroke();
     }
     ctx.restore();
