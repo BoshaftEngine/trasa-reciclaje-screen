@@ -76,12 +76,6 @@ const materials = [
   },
 
   {
-    id: "platino",
-    name: "Platino",
-    image: "assets/materiales/platino.png"
-  },
-
-  {
     id: "tela",
     name: "Tela",
     image: "assets/materiales/tela.png"
@@ -97,12 +91,6 @@ const materials = [
     id: "vidrio",
     name: "Vidrio",
     image: "assets/materiales/vidrio.png"
-  },
-
-  {
-    id: "oro",
-    name: "Oro",
-    image: "assets/materiales/oro.png"
   },
 
   {
