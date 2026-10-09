@@ -1,117 +1,66 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>
-    TRASA · Pantalla
-  </title>
-
-
-  <!--
-    v=2 sirve para evitar que GTA / Firefox
-    carguen una versión antigua desde caché
-  -->
-
-  <link
-    rel="stylesheet"
-    href="css/screen.css?v=4"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRASA · Pantalla</title>
+  <link rel="stylesheet" href="css/screen.css?v=4">
+  <link rel="stylesheet" href="css/arcade.css?v=2">
 </head>
-
-
 <body>
-
-
   <main class="screen">
+    <!-- La pantalla fija y los resultados conservan su funcionamiento. -->
+    <section id="homeView" class="view"></section>
 
-
-    <!-- ======================================================
-         PANTALLA PRINCIPAL
-         ====================================================== -->
-
-    <section
-      id="homeView"
-      class="view"
-    >
-    </section>
-
-
-
-    <!-- ======================================================
-         RESULTADOS DEL RECICLAJE
-         ====================================================== -->
-
-    <section
-      id="resultsView"
-      class="view hidden"
-    >
-
-
-      <!-- CABECERA -->
-
+    <section id="resultsView" class="view hidden">
       <div class="results-header">
-
-        <h1>
-          MATERIALES RECUPERADOS
-        </h1>
-
-        <p>
-          Indica qué materiales deseas conservar
-        </p>
-
+        <h1>MATERIALES RECUPERADOS</h1>
+        <p>Indica qué materiales deseas conservar</p>
       </div>
-
-
-
-      <!--
-        Aquí screen.js genera automáticamente
-        las tarjetas de materiales.
-      -->
-
-      <div
-        id="materialGrid"
-        class="material-grid"
-      >
-      </div>
-
-
-
-      <!-- PIE -->
-
-      <div class="results-footer">
-
-        TRASA · Tratamiento de Residuos Antón
-
-      </div>
-
-
+      <div id="materialGrid" class="material-grid"></div>
+      <div class="results-footer">TRASA · Tratamiento de Residuos Antón</div>
     </section>
 
+    <!-- Tercer estado: TRASA Arcade, controlado por Firebase. -->
+    <section id="arcadeView" class="view hidden">
+      <header class="arcade-screen-header">
+        <div class="arcade-screen-brand">TRASA <span>ARCADE</span></div>
+        <div class="arcade-screen-subtitle">JUEGA · COMPITE · RECICLA</div>
+      </header>
 
+      <div class="arcade-screen-columns">
+        <div class="arcade-screen-main">
+          <div class="arcade-featured-title" id="arcadeFeaturedName">ESPERANDO JUGADORES</div>
+          <div id="arcadeStage" class="arcade-screen-stage"></div>
+        </div>
+        <aside class="arcade-screen-sidebar">
+          <div class="arcade-sidebar-panel">
+            <h2>EN DIRECTO</h2>
+            <div id="arcadePlayers">Esperando jugadores…</div>
+          </div>
+          <div class="arcade-sidebar-panel">
+            <h2>TOP 5 · MEMORY</h2>
+            <div id="arcadeMemoryRank" class="arcade-ranking">Cargando…</div>
+          </div>
+          <div class="arcade-sidebar-panel">
+            <h2>TOP 5 · CLASIFICA</h2>
+            <div id="arcadeClassifyRank" class="arcade-ranking">Cargando…</div>
+          </div>
+          <div class="arcade-sidebar-panel">
+            <h2>TOP 5 · TRASA RUN</h2>
+            <div id="arcadeRunRank" class="arcade-ranking">Cargando…</div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="arcade-screen-footer">
+        <span>JUEGA EN TU MÓVIL O NAVEGADOR:</span>
+        <strong id="arcadeGameUrl"></strong>
+        <a class="arcade-screen-cta" href="juego.html">ABRIR JUEGO</a>
+      </div>
+    </section>
   </main>
-
-
-
-  <!-- ========================================================
-       JAVASCRIPT
-       ======================================================== -->
-
-  <script
-    type="module"
-    src="js/screen.js?v=4"
-  >
-  </script>
-
-
+  <script type="module" src="js/screen.js?v=4"></script>
+  <script type="module" src="js/arcade-screen.js?v=2"></script>
 </body>
-
 </html>
