@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TRASA · Pantalla</title>
   <link rel="stylesheet" href="css/screen.css?v=4">
-  <link rel="stylesheet" href="css/arcade.css?v=2">
+  <link rel="stylesheet" href="css/arcade.css?v=5">
 </head>
 <body>
   <main class="screen">
@@ -43,24 +43,26 @@
             <div id="arcadeMemoryRank" class="arcade-ranking">Cargando…</div>
           </div>
           <div class="arcade-sidebar-panel">
-            <h2>TOP 5 · CLASIFICA</h2>
-            <div id="arcadeClassifyRank" class="arcade-ranking">Cargando…</div>
-          </div>
-          <div class="arcade-sidebar-panel">
             <h2>TOP 5 · TRASA RUN</h2>
             <div id="arcadeRunRank" class="arcade-ranking">Cargando…</div>
           </div>
         </aside>
       </div>
 
+      <!-- QR permanente: los espectadores pueden unirse sin detener la partida. -->
       <div class="arcade-screen-footer">
-        <span>JUEGA EN TU MÓVIL O NAVEGADOR:</span>
-        <strong id="arcadeGameUrl"></strong>
+        <div class="arcade-join-qr-small">
+          <img src="assets/qr-trasa-arcade.png" alt="Código QR para acceder a TRASA Arcade desde el móvil" width="110" height="110">
+        </div>
+        <div class="arcade-join-instructions">
+          <span class="arcade-join-title">ESCANEA EL QR Y JUEGA DESDE TU MÓVIL</span>
+          <strong id="arcadeGameUrl"></strong>
+        </div>
         <a class="arcade-screen-cta" href="juego.html">ABRIR JUEGO</a>
       </div>
     </section>
   </main>
   <script type="module" src="js/screen.js?v=4"></script>
-  <script type="module" src="js/arcade-screen.js?v=2"></script>
+  <script type="module" src="js/arcade-screen.js?v=5"></script>
 </body>
 </html>
