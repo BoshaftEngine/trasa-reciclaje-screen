@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TRASA · Arcade para clientes</title>
+  <link rel="stylesheet" href="css/arcade.css?v=2">
+</head>
+<body class="arcade-game-body">
+  <main class="arcade-player-shell">
+    <header class="arcade-player-head">
+      <div class="arcade-player-logo">TRASA <span>ARCADE</span></div>
+      <p>Juega mientras esperas tu reciclaje. Tu partida se muestra en la pantalla del local.</p>
+      <div id="roomStatus" class="arcade-room-status">Conectando con TRASA…</div>
+    </header>
+    <section id="arcadeLobby" class="arcade-player-panel">
+      <label for="nickname">Tu nombre en el ranking</label>
+      <input id="nickname" type="text" autocomplete="nickname" maxlength="18" placeholder="Nombre o apodo (2–18 caracteres)">
+      <p class="arcade-small-note">Elige un minijuego. Para participar, TRASA debe activar la sala desde CONTROL.</p>
+      <div class="arcade-game-choices">
+        <article>
+          <div class="arcade-game-emoji">🃏</div>
+          <h2>MEMORY DE MATERIALES</h2>
+          <p>Encuentra 6 parejas de materiales antes de que se acabe el tiempo.</p>
+          <button id="startMemory" disabled>JUGAR MEMORY</button>
+        </article>
+        <article>
+          <div class="arcade-game-emoji">♻️</div>
+          <h2>CLASIFICA RESIDUOS</h2>
+          <p>Responde 10 preguntas sobre reciclaje tan rápido como puedas.</p>
+          <button id="startClasifica" disabled>JUGAR CLASIFICA</button>
+        </article>
+        <article>
+          <div class="arcade-game-emoji">🏃</div>
+          <h2>TRASA RUN</h2>
+          <p>Corre como trabajador de TRASA. Salta barriles, neumáticos y contenedores para sumar puntos.</p>
+          <button id="startRun" disabled>JUGAR TRASA RUN</button>
+        </article>
+      </div>
+    </section>
+    <section id="arcadePlayArea" class="arcade-player-panel hidden">
+      <div class="arcade-playing-meta">
+        <h1 id="playerGameTitle">TRASA ARCADE</h1>
+        <div id="playerScore">PUNTOS: 0</div>
+        <div id="playerClock">TIEMPO: —</div>
+      </div>
+      <div id="gameRoot"></div>
+      <div id="gameEnd" class="arcade-end hidden">
+        <h2>PARTIDA TERMINADA</h2>
+        <div id="endScore" class="arcade-end-points">0</div>
+        <p id="endText">¡Gracias por jugar!</p>
+        <button id="backToGames">VOLVER A LOS JUEGOS</button>
+      </div>
+    </section>
+    <footer>TRASA · Tratamiento de Residuos Antón</footer>
+  </main>
+  <script type="module" src="js/arcade-game.js?v=2"></script>
+</body>
+</html>
