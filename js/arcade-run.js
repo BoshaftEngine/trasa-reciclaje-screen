@@ -29,7 +29,7 @@ if (typeof Image !== "undefined") {
     const img = new Image();
     img.onload = () => { loadedRunImages[key] = img; };
     img.onerror = () => {}; // Si falta una imagen, se mantiene el dibujo original.
-    img.src = url + "?v=5"; // Incrementa v= si cambias los PNG y ves sprites antiguos.
+    img.src = url + "?v=6"; // Incrementa v= si cambias los PNG y ves sprites antiguos.
   }
 }
 
@@ -82,13 +82,16 @@ const RUN_CROUCH_H = 34;
 // pero lo bastante altas para poder esquivarlas agachándose.
 // Importante: NO bajar la bolsa a -74: su parte inferior chocaría
 // incluso con el trabajador agachado. -84 permite esquivar agachándose.
-const BAG_TOP = RUN_GROUND - 84;
+// La bolsa se eleva un poco para que el sprite del trabajador agachado,
+// ahora con escala normal, pase claramente por debajo. Su hitbox aún
+// alcanza la cabeza del corredor de pie durante toda la oscilación.
+const BAG_TOP = RUN_GROUND - 96;
 export const RUN_OBSTACLES = {
   cono: { width: 34, height: 43 },
   neumatico: { width: 41, height: 38 },
   barril: { width: 43, height: 56 },
   contenedor: { width: 65, height: 48 },
-  bolsaBasura: { width: 58, height: 52, air: true }
+  bolsaBasura: { width: 58, height: 44, air: true }
 };
 
 function onGround(run) {
@@ -113,6 +116,8 @@ export function createRun() {
     time: 0,
     obstacles: [],
     nextObstacle: 1.65,
+    // Segundo obstáculo de una combinación "aterriza y vuelve a saltar".
+    pendingFollowUp: null,
     lost: false
   };
 }
@@ -127,6 +132,28 @@ export function jumpRun(run) {
 export function duckRun(run, pressed) {
   if (!run || run.lost) return;
   run.ducking = Boolean(pressed);
+}
+
+// Utiliza la misma posición inicial en los dos navegadores.
+function addRunObstacle(run, type, random, offset = 0) {
+  const airborne = type === AIR_TYPE;
+  run.obstacles.push({
+    type,
+    x: RUN_W + 12 + offset,
+    ...(airborne ? { phase: random() * 6.28 } : {})
+  });
+}
+
+function chooseGroundObstacle(random) {
+  return GROUND_TYPES[Math.min(GROUND_TYPES.length - 1,
+    Math.floor(random() * GROUND_TYPES.length))];
+}
+
+// Intervalos variables para evitar el ritmo mecánico anterior.
+// Los descansos están expresados en segundos para adaptarse a la velocidad.
+function randomPause(run, random) {
+  const minimum = Math.max(1.05, 1.52 - run.time * .009);
+  return minimum + random() * 1.15;
 }
 
 export function stepRun(run, dt, random = Math.random) {
@@ -144,24 +171,57 @@ export function stepRun(run, dt, random = Math.random) {
     run.y = RUN_FLOOR_Y;
     run.vy = 0;
   }
+  // Una segunda aparición programada mantiene la separación de tiempo
+  // necesaria para aterrizar después del primer salto y volver a saltar.
+  if (run.pendingFollowUp) {
+    run.pendingFollowUp.remaining -= dt;
+    if (run.pendingFollowUp.remaining <= 0) {
+      addRunObstacle(run, run.pendingFollowUp.type, random);
+      run.pendingFollowUp = null;
+    }
+  }
+
   run.nextObstacle -= dt;
   if (run.nextObstacle <= 0) {
-    // Bolsas voladoras a partir de unos segundos de partida.
-    // La elección es aleatoria; nunca hay un obstáculo de suelo y uno
-    // aéreo superpuestos en la misma aparición.
-    const airborne = run.time >= 4 && random() < .34;
-    const type = airborne ? AIR_TYPE : GROUND_TYPES[Math.floor(random() * GROUND_TYPES.length)];
-    run.obstacles.push({ type, x: RUN_W + 12, ...(airborne ? { phase: random() * 6.28 } : {}) });
-    // Aparecen algo más a menudo con el tiempo, dejando margen para reaccionar.
-    run.nextObstacle = Math.max(.94, 1.47 - run.time * .010) + random() * .42;
+    const pattern = random();
+
+    if (run.time >= 12 && pattern < .22) {
+      // PATRÓN 1: dos obstáculos bajos juntos. Un salto bien medido
+      // supera ambos; se dejan 68 px entre sus posiciones de inicio.
+      // Solo conos/neumáticos: no se generan barriles altos en este patrón.
+      addRunObstacle(run, "cono", random);
+      addRunObstacle(run, "neumatico", random, 68);
+      run.nextObstacle = 1.4 + random() * .9;
+
+    } else if (run.time >= 9 && pattern < .48) {
+      // PATRÓN 2: dos obstáculos de suelo separados por 0.76–0.90 s.
+      // El salto dura ~0.55 s. Por tanto, al caer hay tiempo
+      // para pulsar de nuevo. No combinamos aquí bolsas voladoras.
+      addRunObstacle(run, chooseGroundObstacle(random), random);
+      const followDelay = .76 + random() * .14;
+      run.pendingFollowUp = {
+        remaining: followDelay,
+        type: chooseGroundObstacle(random)
+      };
+      // Descanso tras el segundo obstáculo antes del siguiente patrón.
+      run.nextObstacle = followDelay + 1.3 + random() * .8;
+
+    } else {
+      // PATRÓN NORMAL: obstáculo único, bolsa (desde 4 s) o suelo.
+      // Los huecos fluctúan de forma notable para que no se memoricen.
+      const airborne = run.time >= 4 && random() < .34;
+      addRunObstacle(run, airborne ? AIR_TYPE : chooseGroundObstacle(random), random);
+      run.nextObstacle = randomPause(run, random);
+    }
   }
   for (const o of run.obstacles) o.x -= run.speed * dt;
   run.obstacles = run.obstacles.filter(o => o.x > -110);
   const crouched = run.ducking && onGround(run);
   const px = RUN_X + 10;
-  const py = crouched ? RUN_GROUND - RUN_CROUCH_H + 5 : run.y + 9;
+  // La hitbox de pie incluye la cabeza: las bolsas no se pueden saltar.
+  const py = crouched ? RUN_GROUND - RUN_CROUCH_H + 5 : run.y + 2;
   const pw = crouched ? 36 : 26;
-  const ph = crouched ? RUN_CROUCH_H - 9 : RUN_PLAYER_H - 12;
+  const ph = crouched ? RUN_CROUCH_H - 9 : RUN_PLAYER_H - 5;
   for (const o of run.obstacles) {
     const d = RUN_OBSTACLES[o.type];
     if (!d) continue;
@@ -211,8 +271,9 @@ function drawWorker(ctx, x, y, t = 0, ducking = false) {
   ctx.beginPath(); ctx.ellipse(x + 23, RUN_GROUND + 1, onGround ? 26 : 16, 5, 0, 0, Math.PI * 2); ctx.fill();
   if (crouched) {
     const crouchY = RUN_GROUND - RUN_CROUCH_H;
-    // El dibujo mantiene la proporción original y toca el suelo.
-    if (drawSprite(ctx, "trabajadorAgachado", x - 12, RUN_GROUND - 43, 82, 43)) return;
+    // Misma caja VISUAL que al correr: no se encoge al agacharse.
+    // La hitbox de agachado sí es baja, para esquivar bolsas.
+    if (drawSprite(ctx, "trabajadorAgachado", x - 18, RUN_GROUND - 72, 100, 72)) return;
     // Respaldo si el usuario todavía no ha subido su PNG agachado.
     roundRect(ctx, x+10, crouchY+11, 44, 20, 6, "#647c58");
     ctx.fillStyle="#d8e7a5"; ctx.fillRect(x+12,crouchY+18,40,4);
