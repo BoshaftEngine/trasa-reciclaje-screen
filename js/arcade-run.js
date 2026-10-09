@@ -8,6 +8,12 @@ export const RUN_IMAGE_PATHS = {
   fondo: "assets/trasa-run/fondo.png",
   trabajadorCorre1: "assets/trasa-run/trabajador-corre-1.png",
   trabajadorCorre2: "assets/trasa-run/trabajador-corre-2.png",
+  trabajadorCorre3: "assets/trasa-run/trabajador-corre-3.png",
+  trabajadorCorre4: "assets/trasa-run/trabajador-corre-4.png",
+  trabajadorCorre5: "assets/trasa-run/trabajador-corre-5.png",
+  trabajadorCorre6: "assets/trasa-run/trabajador-corre-6.png",
+  trabajadorCorre7: "assets/trasa-run/trabajador-corre-7.png",
+  trabajadorCorre8: "assets/trasa-run/trabajador-corre-8.png",
   trabajadorSalta: "assets/trasa-run/trabajador-salta.png",
   trabajadorAgachado: "assets/trasa-run/trabajador-agachado.png",
   cono: "assets/trasa-run/cono.png",
@@ -23,16 +29,35 @@ if (typeof Image !== "undefined") {
     const img = new Image();
     img.onload = () => { loadedRunImages[key] = img; };
     img.onerror = () => {}; // Si falta una imagen, se mantiene el dibujo original.
-    img.src = url + "?v=4"; // Incrementa v= si cambias los PNG y ves sprites antiguos.
+    img.src = url + "?v=5"; // Incrementa v= si cambias los PNG y ves sprites antiguos.
   }
 }
 
-function drawSprite(ctx, key, x, y, width, height) {
+// Ajusta cada PNG a un rectángulo sin deformarlo, manteniendo el pixel art.
+// align=bottom sirve para que las botas y los obstáculos apoyen en el suelo.
+function drawSprite(ctx, key, x, y, width, height, align = "bottom") {
   const img = loadedRunImages[key];
-  if (!img) return false;
-  ctx.drawImage(img, x, y, width, height);
+  if (!img || !img.naturalWidth || !img.naturalHeight) return false;
+
+  const scale = Math.min(width / img.naturalWidth, height / img.naturalHeight);
+  const w = img.naturalWidth * scale;
+  const h = img.naturalHeight * scale;
+  const dx = x + (width - w) / 2;
+  const dy = y + (align === "center" ? (height - h) / 2 : height - h);
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, dx, dy, w, h);
+  ctx.restore();
   return true;
 }
+
+// Los 8 frames están soportados aunque todavía no hayas subido todos.
+// Si solo existen dos, el juego alterna esos dos sin parpadeos.
+const RUN_FRAMES = [
+  "trabajadorCorre1", "trabajadorCorre2", "trabajadorCorre3", "trabajadorCorre4",
+  "trabajadorCorre5", "trabajadorCorre6", "trabajadorCorre7", "trabajadorCorre8"
+];
 
 function drawCover(ctx, img, x, y, w, h) {
   const scale = Math.max(w / img.width, h / img.height);
@@ -46,13 +71,17 @@ export const RUN_GROUND = 288;
 export const RUN_X = 132;
 export const RUN_PLAYER_H = 65;
 const RUN_GRAVITY = 1850;
-const RUN_JUMP = -745;
+// Salto más bajo: ~70 px frente a los ~150 px anteriores.
+// Sigue permitiendo superar el barril (56 px), pero no la bolsa voladora.
+const RUN_JUMP = -510;
 const GROUND_TYPES = ["cono", "neumatico", "barril", "contenedor"];
 const AIR_TYPE = "bolsaBasura";
 const RUN_FLOOR_Y = RUN_GROUND - RUN_PLAYER_H;
 const RUN_CROUCH_H = 34;
 // Las bolsas pasan lo bastante bajas para rozar a un corredor erguido,
 // pero lo bastante altas para poder esquivarlas agachándose.
+// Importante: NO bajar la bolsa a -74: su parte inferior chocaría
+// incluso con el trabajador agachado. -84 permite esquivar agachándose.
 const BAG_TOP = RUN_GROUND - 84;
 export const RUN_OBSTACLES = {
   cono: { width: 34, height: 43 },
@@ -182,7 +211,8 @@ function drawWorker(ctx, x, y, t = 0, ducking = false) {
   ctx.beginPath(); ctx.ellipse(x + 23, RUN_GROUND + 1, onGround ? 26 : 16, 5, 0, 0, Math.PI * 2); ctx.fill();
   if (crouched) {
     const crouchY = RUN_GROUND - RUN_CROUCH_H;
-    if (drawSprite(ctx, "trabajadorAgachado", x - 2, crouchY, 65, RUN_CROUCH_H)) return;
+    // El dibujo mantiene la proporción original y toca el suelo.
+    if (drawSprite(ctx, "trabajadorAgachado", x - 12, RUN_GROUND - 43, 82, 43)) return;
     // Respaldo si el usuario todavía no ha subido su PNG agachado.
     roundRect(ctx, x+10, crouchY+11, 44, 20, 6, "#647c58");
     ctx.fillStyle="#d8e7a5"; ctx.fillRect(x+12,crouchY+18,40,4);
@@ -191,9 +221,16 @@ function drawWorker(ctx, x, y, t = 0, ducking = false) {
     ctx.fillStyle="#dce8d6";ctx.font="bold 8px Arial";ctx.fillText("TRASA",x+15,crouchY+29);
     return;
   }
-  // Si hay sprite personalizado, se muestra con el mismo tamaño del trabajador.
-  const spriteKey = onGround ? (Math.floor(t * 8) % 2 ? "trabajadorCorre2" : "trabajadorCorre1") : "trabajadorSalta";
-  if (drawSprite(ctx, spriteKey, x, y, 54, RUN_PLAYER_H)) return;
+  // Hasta ocho posturas por ciclo, a unos 15 fotogramas por segundo.
+  // Solo usamos los PNG que realmente se hayan podido cargar.
+  const availableFrames = RUN_FRAMES.filter(key => Boolean(loadedRunImages[key]));
+  const index = availableFrames.length ? Math.floor(t * 15) % availableFrames.length : 0;
+  const spriteKey = onGround ? availableFrames[index] : "trabajadorSalta";
+
+  // El trabajador aportado tiene relación de aspecto cercana a 2:1.
+  // La caja de dibujo es ANCHA, pero respeta siempre su proporción real.
+  // No alteramos el tamaño de la hitbox física al cambiar la imagen.
+  if (spriteKey && drawSprite(ctx, spriteKey, x - 18, y - 6, 100, 72)) return;
   // Botas y piernas en carrera
   ctx.strokeStyle = "#151c1c";
   ctx.lineWidth = 9;
