@@ -29,7 +29,7 @@ if (typeof Image !== "undefined") {
     const img = new Image();
     img.onload = () => { loadedRunImages[key] = img; };
     img.onerror = () => {}; // Si falta una imagen, se mantiene el dibujo original.
-    img.src = url + "?v=6"; // Incrementa v= si cambias los PNG y ves sprites antiguos.
+    img.src = url + "?v=7"; // Incrementa v= si cambias los PNG y ves sprites antiguos.
   }
 }
 
@@ -78,14 +78,9 @@ const GROUND_TYPES = ["cono", "neumatico", "barril", "contenedor"];
 const AIR_TYPE = "bolsaBasura";
 const RUN_FLOOR_Y = RUN_GROUND - RUN_PLAYER_H;
 const RUN_CROUCH_H = 34;
-// Las bolsas pasan lo bastante bajas para rozar a un corredor erguido,
-// pero lo bastante altas para poder esquivarlas agachándose.
-// Importante: NO bajar la bolsa a -74: su parte inferior chocaría
-// incluso con el trabajador agachado. -84 permite esquivar agachándose.
-// La bolsa se eleva un poco para que el sprite del trabajador agachado,
-// ahora con escala normal, pase claramente por debajo. Su hitbox aún
-// alcanza la cabeza del corredor de pie durante toda la oscilación.
-const BAG_TOP = RUN_GROUND - 96;
+// Bolsa baja: solo se evita manteniéndose agachado.
+// El salto no llega a colocar la cabeza por encima de la bolsa.
+const BAG_TOP = RUN_GROUND - 84;
 export const RUN_OBSTACLES = {
   cono: { width: 34, height: 43 },
   neumatico: { width: 41, height: 38 },
@@ -116,6 +111,9 @@ export function createRun() {
     time: 0,
     obstacles: [],
     nextObstacle: 1.65,
+    // NUEVA MECÁNICA: ráfagas con aviso y aceleración temporal.
+    // La estructura viaja a Firebase para que el público vea el mismo efecto.
+    wind: { phase: "idle", remaining: 11.0 },
     // Segundo obstáculo de una combinación "aterriza y vuelve a saltar".
     pendingFollowUp: null,
     lost: false
@@ -156,13 +154,43 @@ function randomPause(run, random) {
   return minimum + random() * 1.15;
 }
 
+// Las ráfagas empiezan después de unos 11 segundos y se repiten
+// cada 11–18 s. El aviso da tiempo a prepararse: no hay cambios secretos.
+const WIND_WARNING_SECONDS = 1.5;
+const WIND_GUST_SECONDS = 2.8;
+const WIND_SPEED_FACTOR = 1.26;
+
+function updateWind(run, dt, random) {
+  if (!run.wind || typeof run.wind !== "object") {
+    run.wind = { phase: "idle", remaining: 11 };
+  }
+  run.wind.remaining -= dt;
+  if (run.wind.remaining > 0) return;
+  switch (run.wind.phase) {
+    case "idle":
+      run.wind.phase = "warning";
+      run.wind.remaining = WIND_WARNING_SECONDS;
+      break;
+    case "warning":
+      run.wind.phase = "gust";
+      run.wind.remaining = WIND_GUST_SECONDS;
+      break;
+    default:
+      run.wind.phase = "idle";
+      run.wind.remaining = 11 + random() * 7;
+  }
+}
+
 export function stepRun(run, dt, random = Math.random) {
   if (run.lost) return;
   dt = Math.max(0, Math.min(.04, Number(dt) || 0));
   run.time += dt;
-  // Más rápido que la versión anterior: 340 inicial, +16 cada segundo,
-  // alcanza 660 a los 20 s y el máximo de 900 sobre los 35 s.
-  run.speed = Math.min(900, 340 + run.time * 16);
+  // Aceleración progresiva de V6 + ráfagas de viento.
+  // Durante la ráfaga, la velocidad aumenta un 26 % durante 2,8 segundos.
+  // Se avisa 1,5 segundos antes para que sea un reto justo.
+  updateWind(run, dt, random);
+  const baseSpeed = Math.min(900, 340 + run.time * 16);
+  run.speed = Math.round(baseSpeed * (run.wind.phase === "gust" ? WIND_SPEED_FACTOR : 1));
   run.distance += run.speed * dt;
   run.score = Math.floor(run.distance / 12);
   run.vy += RUN_GRAVITY * dt;
@@ -242,7 +270,8 @@ export function packRunState(run) {
     ducking: Boolean(run.ducking),
     distance: Math.round(run.distance),
     speed: Math.round(run.speed),
-    time: Math.round(run.time),
+    time: Number(run.time.toFixed(2)),
+    wind: { phase: run.wind?.phase || "idle", remaining: Math.max(0, Number((run.wind?.remaining || 0).toFixed(2))) },
     obstacles: run.obstacles.map(o => ({
       x: Math.round(o.x), type: o.type,
       ...(o.type === AIR_TYPE ? { phase: Number(o.phase || 0) } : {})
@@ -271,9 +300,9 @@ function drawWorker(ctx, x, y, t = 0, ducking = false) {
   ctx.beginPath(); ctx.ellipse(x + 23, RUN_GROUND + 1, onGround ? 26 : 16, 5, 0, 0, Math.PI * 2); ctx.fill();
   if (crouched) {
     const crouchY = RUN_GROUND - RUN_CROUCH_H;
-    // Misma caja VISUAL que al correr: no se encoge al agacharse.
-    // La hitbox de agachado sí es baja, para esquivar bolsas.
-    if (drawSprite(ctx, "trabajadorAgachado", x - 18, RUN_GROUND - 72, 100, 72)) return;
+    // Vuelve al aspecto compacto de V5: agacharse encoge el sprite.
+    // La colisión también se mantiene baja para evitar las bolsas.
+    if (drawSprite(ctx, "trabajadorAgachado", x - 12, RUN_GROUND - 43, 82, 43)) return;
     // Respaldo si el usuario todavía no ha subido su PNG agachado.
     roundRect(ctx, x+10, crouchY+11, 44, 20, 6, "#647c58");
     ctx.fillStyle="#d8e7a5"; ctx.fillRect(x+12,crouchY+18,40,4);
@@ -382,8 +411,36 @@ export function drawRunScene(canvas, source = {}, options = {}) {
   ctx.fillStyle = "#5b6e59";
   const offset = (Number(source.distance || 0)*1.15)%104;
   for(let x=-104+offset;x<RUN_W;x+=104) ctx.fillRect(x,RUN_GROUND+39,58,5);
+  // Viento visible tanto para el jugador como para los espectadores.
+  const windPhase = source.wind?.phase || "idle";
+  if (windPhase === "gust") {
+    const t = Number(source.time || 0);
+    ctx.save();
+    ctx.strokeStyle = "rgba(210,234,195,.40)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 18; i++) {
+      const x = ((i * 107 - t * 360) % 1120 + 1120) % 1120 - 85;
+      const y = 70 + (i * 37) % 193;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 34 + (i % 3) * 15, y - 7);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
   for (const o of source.obstacles || []) obstacle(ctx,o,Number(source.time || 0));
   drawWorker(ctx,RUN_X,Number(source.y ?? RUN_FLOOR_Y),Number(source.time || 0),Boolean(source.ducking));
+  if (windPhase === "warning" || windPhase === "gust") {
+    roundRect(ctx, 617, 15, 327, 37, 8,
+      windPhase === "warning" ? "rgba(139,93,31,.94)" : "rgba(72,111,53,.94)");
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.font = "bold 18px Arial";
+    ctx.fillText(windPhase === "warning"
+      ? `VIENTO EN ${Math.max(1, Math.ceil(Number(source.wind?.remaining || 0)))} s`
+      : "RÁFAGA DE VIENTO  +26 %", 780, 40);
+    ctx.textAlign = "left";
+  }
   roundRect(ctx,17,16,168,34,9,"rgba(8,19,11,.66)");
   ctx.fillStyle="#d5e5cd"; ctx.font="bold 19px Arial"; ctx.fillText("TRASA RUN",34,40);
   if (options.gameOver){
