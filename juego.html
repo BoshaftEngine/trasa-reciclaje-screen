@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TRASA · Arcade para clientes</title>
-  <link rel="stylesheet" href="css/arcade.css?v=5">
+  <link rel="stylesheet" href="css/arcade.css?v=10">
 </head>
 <body class="arcade-game-body">
   <main class="arcade-player-shell">
@@ -30,6 +30,13 @@
           <p>Corre como trabajador de TRASA. Salta los obstáculos del suelo y agáchate para esquivar las bolsas de basura que vuelan. ¡Cuidado con las ráfagas de viento: aceleran la carrera durante unos segundos!</p>
           <button id="startRun" disabled>JUGAR TRASA RUN</button>
         </article>
+        <article>
+          <div class="arcade-game-emoji">☣️</div>
+          <h2>ZONA CONTAMINADA</h2>
+          <p>FPS retro: explora la planta, recupera 4 materiales, elimina robots y encuentra la salida antes de 3:30.</p>
+          <button id="startZona" disabled>JUGAR ZONA CONTAMINADA</button>
+          <a class="zona-demo-link" href="zona-demo.html">PROBAR SIN FIREBASE</a>
+        </article>
       </div>
     </section>
     <section id="arcadePlayArea" class="arcade-player-panel hidden">
@@ -48,6 +55,6 @@
     </section>
     <footer>TRASA · Tratamiento de Residuos Antón</footer>
   </main>
-  <script type="module" src="js/arcade-game.js?v=9"></script>
+  <script type="module" src="js/arcade-game.js?v=10"></script>
 </body>
 </html>
