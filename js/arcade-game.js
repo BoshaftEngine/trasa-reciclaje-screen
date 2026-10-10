@@ -1,12 +1,15 @@
+import {createZona, stepZona, shootZona, interactZona, packZonaState, drawZona, ZONA_W, ZONA_H} from "./arcade-zona.js?v=1";
+import {mountZonaInput} from "./zona-input.js?v=1";
 import { MATERIALS } from "./materials.js?v=2";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
-import { GAME_DURATION, shuffle, cleanName } from "./arcade-common.js?v=3";
-import { createRun, stepRun, jumpRun, duckRun, packRunState, drawRunScene, RUN_W, RUN_H } from "./arcade-run.js?v=4";
+import { GAME_DURATION, shuffle, cleanName } from "./arcade-common.js?v=10";
+import { createRun, stepRun, jumpRun, duckRun, packRunState, drawRunScene, RUN_W, RUN_H } from "./arcade-run.js?v=8";
 
 const $ = id => document.getElementById(id);
 const nickInput = $("nickname");
 const memoryBtn = $("startMemory");
 const runBtn = $("startRun");
+const zonaBtn = $("startZona");
 const restartBtn = $("backToGames");
 const roomStatus = $("roomStatus");
 const lobby = $("arcadeLobby");
@@ -32,6 +35,8 @@ let liveBusy = false;
 let runFrame = null;
 let runPreviousTime = 0;
 let runCanvas = null;
+let zonaCanvas = null;
+let zonaInput = null;
 const matById = Object.fromEntries(MATERIALS.map(m => [m.id, m]));
 
 try { nickInput.value = localStorage.getItem("trasa-arcade-nick") || ""; } catch {}
@@ -41,11 +46,13 @@ function enableButtons() {
   const enabled = Boolean(firebase && roomOpen && !session && !blocked);
   memoryBtn.disabled = !enabled;
   runBtn.disabled = !enabled;
+  zonaBtn.disabled = !enabled;
 }
 
 function clearTimers() {
   clearInterval(timer);
   clearTimeout(memoryTimeout);
+  zonaInput?.destroy(); zonaInput = null; zonaCanvas = null;
   cancelAnimationFrame(runFrame);
   runFrame = null;
   runCanvas = null;
@@ -67,6 +74,7 @@ function scoreNow() {
 function liveState() {
   if (!session) return {};
   if (session.gameId === "run") return packRunState(session.runner);
+  if (session.gameId === "zona") return packZonaState(session.zona);
   if (session.gameId === "memory") {
     return {
       board: session.board,
@@ -80,7 +88,7 @@ function liveState() {
 
 function syncLive(force = false, status = "playing") {
   if (!firebase || !session || blocked) return Promise.resolve();
-  const delay = session.gameId === "run" ? 450 : 1600;
+  const delay = session.gameId === "run" ? 450 : session.gameId === "zona" ? 350 : 1600;
   if (!force && (Date.now() - lastLiveWrite < delay || liveBusy)) return Promise.resolve();
   lastLiveWrite = Date.now();
   const snapshot = {
@@ -134,13 +142,15 @@ async function finishGame(reason = "completed") {
   if (!session || session.finished || blocked) return;
   session.finished = true;
   clearTimers();
-  if (reason === "completed") session.score += secondsLeft();
+  if (reason === "completed" && session.gameId === "memory") session.score += secondsLeft();
   scoreNow();
   gameRoot.classList.add("hidden");
   endBlock.classList.remove("hidden");
   endScore.textContent = String(session.score);
   endText.textContent = session.gameId === "run"
     ? "¡Buen recorrido! Tu puntuación queda registrada en el TOP de TRASA RUN."
+    : session.gameId === "zona"
+      ? (reason === "completed" ? "¡Planta evacuada! Tu puntuación se guarda en el TOP de Zona Contaminada." : "Misión fallida. Los materiales recuperados y robots desactivados también puntúan.")
     : reason === "completed"
       ? "¡Enhorabuena! Tu mejor puntuación queda guardada en el ranking."
       : "Tiempo agotado. Tu mejor puntuación queda guardada en el ranking.";
@@ -304,6 +314,33 @@ function runAnimation(timestamp) {
   runFrame = requestAnimationFrame(runAnimation);
 }
 
+/* ZONA CONTAMINADA: misma simulación en el navegador, estados compactos en Firebase. */
+function renderZona(){
+  gameRoot.replaceChildren();
+  const holder=document.createElement("div");holder.className="zona-game";
+  const hint=document.createElement("p");hint.className="zona-instructions";
+  hint.textContent="WASD: moverte · Flechas/Q: girar · Arrastrar: mirar · Espacio: disparar · E: usar salida · M: mapa";
+  const canvas=document.createElement("canvas");canvas.className="zona-canvas";canvas.width=ZONA_W;canvas.height=ZONA_H;
+  holder.append(hint,canvas);gameRoot.append(holder);zonaCanvas=canvas;
+  zonaInput=mountZonaInput(holder,canvas,
+    ()=>{if(session?.gameId==="zona"&&!session.finished){shootZona(session.zona);syncLive(true);}},
+    ()=>{if(session?.gameId==="zona"&&!session.finished){interactZona(session.zona);syncLive(true);}},
+    ()=>{if(session?.gameId==="zona"&&!session.finished)session.zona.showMap=!session.zona.showMap;});
+  drawZona(canvas,packZonaState(session.zona));scoreNow();
+}
+function zonaAnimation(timestamp){
+  if(!session||session.gameId!=="zona"||session.finished||!roomOpen||blocked)return;
+  const dt=runPreviousTime?(timestamp-runPreviousTime)/1000:0;runPreviousTime=timestamp;
+  stepZona(session.zona,dt,zonaInput?.read());
+  session.zona.remaining=Math.min(session.zona.remaining,secondsLeft());
+  if(session.zona.remaining<=0)session.zona.lost=true;
+  session.score=session.zona.score;
+  if(zonaCanvas)drawZona(zonaCanvas,packZonaState(session.zona),{flash:session.zona.flash>0});
+  scoreNow();
+  if(session.zona.won||session.zona.lost){finishGame(session.zona.won?"completed":"failed");return;}
+  syncLive();runFrame=requestAnimationFrame(zonaAnimation);
+}
+
 function startGame(gameId) {
   if (!firebase || !roomOpen || session || blocked) return;
   const nick = cleanName(nickInput.value);
@@ -327,18 +364,24 @@ function startGame(gameId) {
     session.matched = [];
   } else if (gameId === "run") {
     session.runner = createRun();
+  } else if (gameId === "zona") {
+    session.zona = createZona();
   }
-  title.textContent = gameId === "memory" ? "MEMORY DE MATERIALES" : "TRASA RUN";
+  title.textContent = gameId === "memory" ? "MEMORY DE MATERIALES" : gameId === "zona" ? "TRASA: ZONA CONTAMINADA" : "TRASA RUN";
   lobby.classList.add("hidden");
   playArea.classList.remove("hidden");
   gameRoot.classList.remove("hidden");
   endBlock.classList.add("hidden");
   if (gameId === "memory") { renderMemory(); syncLive(true); }
-  else {
+  else if (gameId === "run") {
     runPreviousTime = 0;
     renderRun();
     syncLive(true);
     runFrame = requestAnimationFrame(runAnimation);
+  } else if (gameId === "zona") {
+    runPreviousTime=0;
+    renderZona();syncLive(true);
+    runFrame=requestAnimationFrame(zonaAnimation);
   }
   timer = setInterval(() => {
     if (!session || session.finished) return;
@@ -363,6 +406,7 @@ function backToGames() {
 async function init() {
   memoryBtn.onclick = () => startGame("memory");
   runBtn.onclick = () => startGame("run");
+  zonaBtn.onclick = () => startGame("zona");
   restartBtn.onclick = backToGames;
   enableButtons();
   if (!isFirebaseConfigured()) { notice("Firebase todavía no está configurado."); return; }

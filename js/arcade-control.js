@@ -1,5 +1,5 @@
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
-import { readLive, ARCADE_GAMES } from "./arcade-common.js?v=3";
+import { readLive, ARCADE_GAMES } from "./arcade-common.js?v=10";
 
 const $ = id => document.getElementById(id);
 const openBtn = $("openArcadeBtn");
@@ -37,8 +37,10 @@ if (isFirebaseConfigured()) {
     let rawLive = {};
     let rawMemory = {};
     let rawRun = {};
+    let rawZona = {};
     let rawHistoryMemory = {};
     let rawHistoryRun = {};
+    let rawHistoryZona = {};
     let rawBans = {};
     let players = [];
 
@@ -61,7 +63,8 @@ if (isFirebaseConfigured()) {
       for (const [uid, value] of Object.entries(rawLive)) register(uid, value);
       for (const [uid, value] of Object.entries(rawMemory)) register(uid, value);
       for (const [uid, value] of Object.entries(rawRun)) register(uid, value);
-      for (const history of [rawHistoryMemory, rawHistoryRun]) {
+      for (const [uid, value] of Object.entries(rawZona)) register(uid, value);
+      for (const history of [rawHistoryMemory, rawHistoryRun, rawHistoryZona]) {
         for (const [uid, entries] of Object.entries(history)) {
           for (const value of Object.values(entries || {})) register(uid, value);
         }
@@ -94,8 +97,10 @@ if (isFirebaseConfigured()) {
     });
     f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/scores/memory")), snap => {rawMemory = snap.val() || {}; buildParticipants();});
     f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/scores/run")), snap => {rawRun = snap.val() || {}; buildParticipants();});
+    f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/scores/zona")), snap => {rawZona = snap.val() || {}; buildParticipants();});
     f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/history/memory")), snap => {rawHistoryMemory = snap.val() || {}; buildParticipants();});
     f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/history/run")), snap => {rawHistoryRun = snap.val() || {}; buildParticipants();});
+    f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/history/zona")), snap => {rawHistoryZona = snap.val() || {}; buildParticipants();});
     f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/bans")), snap => {rawBans = snap.val() || {}; buildParticipants();});
 
     openBtn.onclick = async () => {
@@ -132,9 +137,11 @@ if (isFirebaseConfigured()) {
           [`live/${uid}`]: null,
           [`scores/memory/${uid}`]: null,
           [`scores/run/${uid}`]: null,
+          [`scores/zona/${uid}`]: null,
           [`scores/clasifica/${uid}`]: null,
           [`history/memory/${uid}`]: null,
           [`history/run/${uid}`]: null,
+          [`history/zona/${uid}`]: null,
           [`history/clasifica/${uid}`]: null
         });
         adminStatus.textContent = `Se borraron los registros y se bloqueó la sesión de ${nameOnly}.`;
@@ -142,7 +149,7 @@ if (isFirebaseConfigured()) {
     };
 
     clearAllBtn.onclick = async () => {
-      if (!window.confirm("¿Borrar TODOS los jugadores activos, récords e historial de Memory y TRASA RUN?")) return;
+      if (!window.confirm("¿Borrar TODOS los jugadores activos, récords e historial de Memory, TRASA RUN y Zona Contaminada?")) return;
       if (!window.confirm("CONFIRMA EL BORRADO GENERAL. Se perderán todas las puntuaciones de forma permanente.")) return;
       try {
         adminStatus.textContent = "Eliminando todos los registros…";

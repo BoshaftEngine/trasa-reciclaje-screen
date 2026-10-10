@@ -1,7 +1,8 @@
+import {drawZona,ZONA_W,ZONA_H} from "./arcade-zona.js?v=1";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
 import { MATERIALS } from "./materials.js?v=2";
-import { readLive, safeState, scoreRanking, ARCADE_GAMES } from "./arcade-common.js?v=3";
-import { drawRunScene, RUN_W, RUN_H } from "./arcade-run.js?v=4";
+import { readLive, safeState, scoreRanking, ARCADE_GAMES } from "./arcade-common.js?v=10";
+import { drawRunScene, RUN_W, RUN_H } from "./arcade-run.js?v=8";
 
 const arcadeView = document.getElementById("arcadeView");
 const activePlayer = document.getElementById("arcadeFeaturedName");
@@ -9,6 +10,7 @@ const stage = document.getElementById("arcadeStage");
 const liveRoster = document.getElementById("arcadePlayers");
 const memoryRank = document.getElementById("arcadeMemoryRank");
 const runRank = document.getElementById("arcadeRunRank");
+const zonaRank = document.getElementById("arcadeZonaRank");
 const gameLink = document.getElementById("arcadeGameUrl");
 const gameLinkText = new URL("juego.html", document.baseURI).href;
 gameLink.textContent = gameLinkText;
@@ -20,6 +22,8 @@ let livePlayers = [];
 let rawLivePlayers = {};
 let runSpectator = null;
 let runSpectatorFrame = null;
+let zonaSpectator = null;
+let zonaSpectatorFrame = null;
 
 function buildRanking(target, items) {
   target.replaceChildren();
@@ -139,15 +143,56 @@ function runStage(player, state) {
   runSpectator.info.textContent = `PUNTOS: ${player.score}  ·  SOBREVIVIENDO: ${Math.round(state.time || 0)} s`;
 }
 
+function stopZonaSpectator(){
+  if(zonaSpectatorFrame!==null)cancelAnimationFrame(zonaSpectatorFrame);
+  zonaSpectatorFrame=null;zonaSpectator=null;
+}
+function animateZonaSpectator(t){
+  if(!zonaSpectator)return;
+  const s=zonaSpectator;
+  // Interpolamos entre paquetes Firebase con 450 ms de retraso;
+  // no enviamos fotogramas ni vídeo a Firebase.
+  if(!s.lastPaint||t-s.lastPaint>=50){
+    const u=Math.max(0,Math.min(1,(t-s.receivedAt)/450));
+    const from=s.previous||s.current,to=s.current;
+    const pose={...to,
+      x:Number(from.x)+(Number(to.x)-Number(from.x))*u,
+      y:Number(from.y)+(Number(to.y)-Number(from.y))*u,
+      a:Number(from.a)+Math.atan2(Math.sin(Number(to.a)-Number(from.a)),Math.cos(Number(to.a)-Number(from.a)))*u,
+      enemies:(to.enemies||[]).map((e,i)=>({
+        ...e,x:Number(from.enemies?.[i]?.x??e.x)+(Number(e.x)-Number(from.enemies?.[i]?.x??e.x))*u,
+        y:Number(from.enemies?.[i]?.y??e.y)+(Number(e.y)-Number(from.enemies?.[i]?.y??e.y))*u
+      }))
+    };
+    drawZona(s.canvas,pose);s.lastPaint=t;
+  }
+  zonaSpectatorFrame=requestAnimationFrame(animateZonaSpectator);
+}
+function zonaStage(player,state){
+  if(!zonaSpectator||zonaSpectator.uid!==player.uid){
+    stopZonaSpectator();stage.replaceChildren();stage.dataset.content="zona";
+    const holder=document.createElement("div");holder.className="zona-stage";
+    const info=document.createElement("div");info.className="arcade-stage-meta";
+    const canvas=document.createElement("canvas");canvas.className="zona-canvas";canvas.width=ZONA_W;canvas.height=ZONA_H;
+    holder.append(info,canvas);stage.append(holder);
+    zonaSpectator={uid:player.uid,canvas,info,current:state,previous:state,receivedAt:performance.now(),lastPaint:0};
+    zonaSpectatorFrame=requestAnimationFrame(animateZonaSpectator);
+  }else{
+    zonaSpectator.previous=zonaSpectator.current;zonaSpectator.current=state;
+    zonaSpectator.receivedAt=performance.now();
+  }
+  zonaSpectator.info.textContent=`PUNTOS: ${player.score} · ♻ ${state.materials||0}/4 · SALUD: ${state.health||0} · ${state.remaining||0} s`;
+}
+
 function renderStage() {
   if (screenDisplay.mode !== "arcade") {
-    stopRunSpectator();
+    stopRunSpectator();stopZonaSpectator();
     return;
   }
   const requested = livePlayers.find(p => p.uid === screenDisplay.featuredUid);
   const current = requested || livePlayers[0];
   if (!current) {
-    stopRunSpectator();
+    stopRunSpectator();stopZonaSpectator();
     activePlayer.textContent = "ESPERANDO JUGADORES";
 
     // No reconstruir el QR si la sala sigue vacía: evita parpadeos.
@@ -176,13 +221,17 @@ function renderStage() {
     }
     return;
   }
-  activePlayer.textContent = `${current.name.toUpperCase()} · ${current.gameId === "memory" ? "MEMORY" : "TRASA RUN"}`;
+  activePlayer.textContent = `${current.name.toUpperCase()} · ${current.gameId === "memory" ? "MEMORY" : current.gameId === "zona" ? "ZONA CONTAMINADA" : "TRASA RUN"}`;
   const state = safeState(current.state);
   if (current.gameId === "run") {
-    runStage(current, state);
+    stopZonaSpectator();runStage(current, state);
     return;
   }
-  stopRunSpectator();
+  if (current.gameId === "zona") {
+    stopRunSpectator();zonaStage(current,state);
+    return;
+  }
+  stopRunSpectator();stopZonaSpectator();
   stage.replaceChildren();
   stage.dataset.content = "memory";
   stage.append(memoryStage(current, state));
@@ -210,6 +259,7 @@ async function init() {
     });
     f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/scores/memory")), snap => buildRanking(memoryRank, snap.val()));
     f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/scores/run")), snap => buildRanking(runRank, snap.val()));
+    f.dbMod.onValue(f.dbMod.ref(f.db, roomPath("arcade/scores/zona")), snap => buildRanking(zonaRank, snap.val()));
     // Actualiza el estado de los jugadores inactivos aunque no lleguen escrituras nuevas.
     setInterval(() => { if (!arcadeView.classList.contains("hidden")) redraw(); }, 12000);
   } catch (error) {
