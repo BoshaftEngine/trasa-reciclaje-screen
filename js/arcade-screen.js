@@ -1,4 +1,4 @@
-import {drawZona,ZONA_W,ZONA_H} from "./arcade-zona.js?v=2";
+import {drawZona,ZONA_W,ZONA_H} from "./arcade-zona.js?v=11";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
 import { MATERIALS } from "./materials.js?v=2";
 import { readLive, safeState, scoreRanking, ARCADE_GAMES } from "./arcade-common.js?v=10";
@@ -154,7 +154,8 @@ function animateZonaSpectator(t){
   // no enviamos fotogramas ni vídeo a Firebase.
   if(!s.lastPaint||t-s.lastPaint>=50){
     const u=Math.max(0,Math.min(1,(t-s.receivedAt)/450));
-    const from=s.previous||s.current,to=s.current;
+    const to=s.current;
+    const from=(s.previous?.seed===to.seed && s.previous?.level===to.level)?s.previous:to;
     const pose={...to,
       x:Number(from.x)+(Number(to.x)-Number(from.x))*u,
       y:Number(from.y)+(Number(to.y)-Number(from.y))*u,
@@ -181,7 +182,7 @@ function zonaStage(player,state){
     zonaSpectator.previous=zonaSpectator.current;zonaSpectator.current=state;
     zonaSpectator.receivedAt=performance.now();
   }
-  zonaSpectator.info.textContent=`PUNTOS: ${player.score} · ♻ ${state.materials||0}/4 · SALUD: ${state.health||0} · ${state.remaining||0} s`;
+  zonaSpectator.info.textContent=`NIVEL ${state.level||1}/3 · PUNTOS: ${player.score} · ♻ ${state.materials||0}/${state.need||4} · SALUD: ${state.health||0} · ${state.remaining||0} s`;
 }
 
 function renderStage() {

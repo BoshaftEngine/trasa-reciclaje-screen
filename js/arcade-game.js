@@ -1,8 +1,8 @@
-import {createZona, stepZona, shootZona, interactZona, packZonaState, drawZona, ZONA_W, ZONA_H} from "./arcade-zona.js?v=2";
+import {createZona, stepZona, shootZona, interactZona, packZonaState, drawZona, ZONA_W, ZONA_H} from "./arcade-zona.js?v=11";
 import {mountZonaInput} from "./zona-input.js?v=2";
 import { MATERIALS } from "./materials.js?v=2";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
-import { GAME_DURATION, shuffle, cleanName } from "./arcade-common.js?v=10";
+import { GAME_DURATION, shuffle, cleanName } from "./arcade-common.js?v=11";
 import { createRun, stepRun, jumpRun, duckRun, packRunState, drawRunScene, RUN_W, RUN_H } from "./arcade-run.js?v=8";
 
 const $ = id => document.getElementById(id);
@@ -68,6 +68,7 @@ function scoreNow() {
   scoreText.textContent = `PUNTOS: ${session?.score || 0}`;
   clockText.textContent = session?.gameId === "run"
     ? `SOBREVIVIENDO: ${Math.floor(session.runner?.time || 0)} s`
+    : session?.gameId === "zona" ? `NIVEL ${session.zona?.level || 1}/3 · ${Math.ceil(session.zona?.remaining || 0)} s`
     : `TIEMPO: ${secondsLeft()} s`;
 }
 
@@ -332,8 +333,7 @@ function zonaAnimation(timestamp){
   if(!session||session.gameId!=="zona"||session.finished||!roomOpen||blocked)return;
   const dt=runPreviousTime?(timestamp-runPreviousTime)/1000:0;runPreviousTime=timestamp;
   stepZona(session.zona,dt,zonaInput?.read());
-  session.zona.remaining=Math.min(session.zona.remaining,secondsLeft());
-  if(session.zona.remaining<=0)session.zona.lost=true;
+  if(secondsLeft()<=0)session.zona.lost=true;
   session.score=session.zona.score;
   if(zonaCanvas)drawZona(zonaCanvas,packZonaState(session.zona),{flash:session.zona.flash>0});
   scoreNow();
@@ -367,7 +367,7 @@ function startGame(gameId) {
   } else if (gameId === "zona") {
     session.zona = createZona();
   }
-  title.textContent = gameId === "memory" ? "MEMORY DE MATERIALES" : gameId === "zona" ? "TRASA: ZONA CONTAMINADA" : "TRASA RUN";
+  title.textContent = gameId === "memory" ? "MEMORY DE MATERIALES" : gameId === "zona" ? "TRASA: ZONA CONTAMINADA · 3 NIVELES" : "TRASA RUN";
   lobby.classList.add("hidden");
   playArea.classList.remove("hidden");
   gameRoot.classList.remove("hidden");

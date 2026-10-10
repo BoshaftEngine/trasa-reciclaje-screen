@@ -5,7 +5,7 @@ export const ARCADE_GAMES = [
   { id: "zona", name: "ZONA CONTAMINADA", short: "Zona" }
 ];
 
-export const GAME_DURATION = { memory: 90, zona: 210 };
+export const GAME_DURATION = { memory: 90, zona: 540 };
 
 export const shuffle = source => {
   const result = [...source];
