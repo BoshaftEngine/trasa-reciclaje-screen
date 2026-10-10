@@ -354,3 +354,29 @@
   .arcade-join-qr-small { width: 64px; height: 64px; flex-basis: 64px; }
   .arcade-join-lobby-qr { max-height: 35vh; }
 }
+
+/* =========================================================
+   TRASA ZONA CONTAMINADA — página de prueba y pantalla integrada
+   ========================================================= */
+.arcade-game-choices {grid-template-columns:repeat(3,minmax(0,1fr));}
+.arcade-game-choices article {display:flex;flex-direction:column;align-items:center;}
+.arcade-game-choices article p {flex:1;}
+.arcade-game-choices article button {font-size:20px;max-width:100%;}
+.zona-game,.zona-stage{width:100%;max-width:850px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;}
+.zona-canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;background:#263329;border:2px solid #789474;border-radius:9px;touch-action:none;image-rendering:pixelated;}
+.zona-controls{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:8px;user-select:none;}
+.zona-move,.zona-buttons{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;}
+.zona-controls button{min-width:50px;padding:12px 11px;font:bold 17px Arial,sans-serif;background:#384c38;color:#eaf4e5;border:1px solid #8daa82;border-radius:8px;touch-action:none;cursor:pointer;}
+.zona-controls .zona-fire{background:#674f26;border-color:#b6a66d;}
+.zona-instructions{margin:2px 0 9px;font:14px Arial,sans-serif;color:#bcd0bb;text-align:center;line-height:1.5;}
+.zona-demo-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;}
+.zona-demo-bottom span{font-size:13px;color:#bdcdb9;}
+.zona-demo-bottom button{cursor:pointer;background:#4b5320;color:white;padding:10px 15px;border-radius:8px;border:1px solid #9eae88;font:bold 19px 'Bebas Neue',sans-serif;}
+.zona-stage .arcade-stage-meta{margin-bottom:2px;font-size:clamp(14px,1.4vw,25px);}
+.arcade-screen-sidebar{grid-template-rows:repeat(4,minmax(0,1fr));}
+.arcade-sidebar-panel{padding:6px 10px;}
+.arcade-sidebar-panel h2{font-size:clamp(16px,1.45vw,24px);margin-bottom:3px;}
+.arcade-rank-row,.arcade-player-row{font-size:clamp(13px,1.15vw,19px);margin:2px 0;}
+@media(max-width:800px){.arcade-game-choices{grid-template-columns:1fr;}.arcade-game-choices article p{min-height:0;}.zona-controls{flex-direction:column;gap:10px;}.zona-move,.zona-buttons{width:100%;}.zona-controls button{flex:1;min-width:48px;}.arcade-screen-sidebar{gap:3px;}}
+
+.zona-demo-link{display:inline-block;margin-top:10px;color:#c3ddae;font:bold 15px Arial,sans-serif;text-decoration:underline;}
