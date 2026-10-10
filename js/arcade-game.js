@@ -1,5 +1,5 @@
-import {createZona, stepZona, shootZona, interactZona, packZonaState, drawZona, ZONA_W, ZONA_H} from "./arcade-zona.js?v=1";
-import {mountZonaInput} from "./zona-input.js?v=1";
+import {createZona, stepZona, shootZona, interactZona, packZonaState, drawZona, ZONA_W, ZONA_H} from "./arcade-zona.js?v=2";
+import {mountZonaInput} from "./zona-input.js?v=2";
 import { MATERIALS } from "./materials.js?v=2";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
 import { GAME_DURATION, shuffle, cleanName } from "./arcade-common.js?v=10";
@@ -319,7 +319,7 @@ function renderZona(){
   gameRoot.replaceChildren();
   const holder=document.createElement("div");holder.className="zona-game";
   const hint=document.createElement("p");hint.className="zona-instructions";
-  hint.textContent="WASD: moverte · Flechas/Q: girar · Arrastrar: mirar · Espacio: disparar · E: usar salida · M: mapa";
+  hint.textContent="WASD: moverte · Ratón: mirar (clic para capturar, ESC para soltar) · Espacio: disparar · E: usar salida · M: mapa";
   const canvas=document.createElement("canvas");canvas.className="zona-canvas";canvas.width=ZONA_W;canvas.height=ZONA_H;
   holder.append(hint,canvas);gameRoot.append(holder);zonaCanvas=canvas;
   zonaInput=mountZonaInput(holder,canvas,

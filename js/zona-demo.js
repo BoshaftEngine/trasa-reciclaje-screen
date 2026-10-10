@@ -1,5 +1,5 @@
-import {createZona,stepZona,shootZona,interactZona,drawZona,packZonaState} from './arcade-zona.js?v=1';
-import {mountZonaInput} from './zona-input.js?v=1';
+import {createZona,stepZona,shootZona,interactZona,drawZona,packZonaState} from './arcade-zona.js?v=2';
+import {mountZonaInput} from './zona-input.js?v=2';
 const canvas=document.getElementById('zonaDemoCanvas');const root=document.getElementById('zonaDemoRoot');const status=document.getElementById('zonaDemoStatus');
 let game,input,last=0,frame;
 function begin(){cancelAnimationFrame(frame);input?.destroy();game=createZona();input=mountZonaInput(root,canvas,()=>shootZona(game),()=>interactZona(game),()=>{game.showMap=!game.showMap;});last=0;frame=requestAnimationFrame(loop);}

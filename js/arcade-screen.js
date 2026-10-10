@@ -1,4 +1,4 @@
-import {drawZona,ZONA_W,ZONA_H} from "./arcade-zona.js?v=1";
+import {drawZona,ZONA_W,ZONA_H} from "./arcade-zona.js?v=2";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
 import { MATERIALS } from "./materials.js?v=2";
 import { readLive, safeState, scoreRanking, ARCADE_GAMES } from "./arcade-common.js?v=10";
