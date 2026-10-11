@@ -151,6 +151,7 @@
 .arcade-player-panel button { cursor: pointer; border-radius: 9px; background: #4b5320; border: 1px solid #91a475; color: white; padding: 12px 18px; font: 23px "Bebas Neue",sans-serif; letter-spacing: .5px; }
 .arcade-player-panel button:disabled { cursor: not-allowed; opacity: .45; }
 .arcade-playing-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; font-family: "Bebas Neue",sans-serif; }
+.arcade-exit-btn{padding:10px 16px!important;font-size:22px!important;background:#53312c!important;border-color:#9d6a61!important;}
 .arcade-playing-meta h1 { flex-basis: 100%; margin: 0 0 6px; text-align: center; font-size: 38px; }
 .arcade-playing-meta > div { font-size: 25px; color: #b8d3af; margin-bottom: 14px; }
 .arcade-player-memory { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 10px; }
@@ -372,6 +373,7 @@
 .zona-demo-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;}
 .zona-demo-bottom span{font-size:13px;color:#bdcdb9;}
 .zona-demo-bottom button{cursor:pointer;background:#4b5320;color:white;padding:10px 15px;border-radius:8px;border:1px solid #9eae88;font:bold 19px 'Bebas Neue',sans-serif;}
+.zona-demo-bottom #zonaDemoExit{background:#53312c;border-color:#9d6a61;}
 .zona-stage .arcade-stage-meta{margin-bottom:2px;font-size:clamp(14px,1.4vw,25px);}
 .arcade-screen-sidebar{grid-template-rows:repeat(4,minmax(0,1fr));}
 .arcade-sidebar-panel{padding:6px 10px;}
@@ -379,4 +381,3 @@
 .arcade-rank-row,.arcade-player-row{font-size:clamp(13px,1.15vw,19px);margin:2px 0;}
 @media(max-width:800px){.arcade-game-choices{grid-template-columns:1fr;}.arcade-game-choices article p{min-height:0;}.zona-controls{flex-direction:column;gap:10px;}.zona-move,.zona-buttons{width:100%;}.zona-controls button{flex:1;min-width:48px;}.arcade-screen-sidebar{gap:3px;}}
 
-.zona-demo-link{display:inline-block;margin-top:10px;color:#c3ddae;font:bold 15px Arial,sans-serif;text-decoration:underline;}
