@@ -1,0 +1,26 @@
+TRASA SNAKE - SPRITES INTERCAMBIABLES
+
+Todos los archivos de ejemplo son PNG de 64 x 64 pixeles.
+Puedes sustituirlos por PNG de 128x128, 256x256 u otro tamaño cuadrado.
+El juego mantiene las proporciones originales (sin deformar).
+
+serpiente-cabeza.png   cabeza - dibujada mirando hacia la DERECHA
+serpiente-cuerpo.png   segmento recto HORIZONTAL (conexiones izquierda y derecha)
+serpiente-curva.png    curva con conexiones hacia DERECHA y ABAJO
+serpiente-cola.png     extremo de cola apuntando hacia la DERECHA
+material-acero.png    material 1 (10 puntos)
+material-aluminio.png material 2 (10 puntos)
+material-madera.png    material 3 (10 puntos)
+material-caucho.png    material 4 (10 puntos)
+material-plastico.png  material 5 (10 puntos)
+bonus.png              estrella / recogida especial (35 puntos)
+residuo-toxico.png     obstaculo peligroso
+casilla-clara.png      fondo de casilla par
+casilla-oscura.png     fondo de casilla impar
+
+La cabeza, curva, segmento recto y cola se rotan automaticamente al moverse.
+NO cambies el nombre de los archivos; mantiene la extension .png.
+Preferible con FONDO TRANSPARENTE salvo casillas, que pueden ser opacas.
+
+Si el navegador sigue usando sprites antiguos, aumenta ?v=15 dentro de
+js/arcade-snake.js a ?v=16 y fuerza recarga con Ctrl + Shift + R.
