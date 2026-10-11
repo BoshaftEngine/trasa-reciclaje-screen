@@ -44,7 +44,7 @@ export const ZONA_ASSETS = {
 };
 const pics={};
 if(typeof Image!=='undefined') for(const [k,u] of Object.entries(ZONA_ASSETS)){
-  const img=new Image(); img.onload=()=>{pics[k]=img;}; img.src=u+'?v=11';
+  const img=new Image(); img.onload=()=>{pics[k]=img;}; img.src=u+'?v=12';
 }
 const CELL=17, FOV=Math.PI/3, MAX_RAY=20;
 const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
@@ -109,7 +109,8 @@ function initSector(g,level){
   const cfg=ZONA_LEVELS[level-1];g.level=level;g.seed=levelSeed(g.baseSeed,level);
   const world=makeZonaWorld(g.seed,level);
   g.x=world.start.x;g.y=world.start.y;g.a=world.map[1][2]===0?0:Math.PI/2;
-  g.time=0;g.remaining=cfg.seconds;g.materials=0;g.hasKey=false;g.itemsMask=0;g.barrelsMask=0;
+  g.time=0;g.materials=0;g.hasKey=false;g.itemsMask=0;g.barrelsMask=0;
+  if(typeof g.totalTime!=='number')g.totalTime=0;
   g.playerShots=[];g.enemyShots=[];g.explosions=[];
   g.enemies=world.enemies.map((o,i)=>({x:o.x,y:o.y,hp:o.hp,kind:o.kind,cooldown:.7+i*.24,moving:false,
     homeX:o.x,homeY:o.y,patrolStep:0,patrolTimer:0,alert:0}));
@@ -117,7 +118,7 @@ function initSector(g,level){
   message(g,`NIVEL ${level} · ${cfg.name}`,4);
 }
 export function createZona(seed=Math.floor(Math.random()*2000000000)+1){
-  const g={baseSeed:Number(seed)||2768,level:1,score:0,health:4,ammo:14,won:false,lost:false,showMap:false,notice:'',noticeTime:0};
+  const g={baseSeed:Number(seed)||2768,level:1,score:0,health:4,ammo:14,totalTime:0,won:false,lost:false,showMap:false,notice:'',noticeTime:0};
   initSector(g,1);return g;
 }
 
@@ -137,7 +138,7 @@ export function interactZona(g){
   if(dist(g,world.exit)<1.4){
     if(!g.hasKey){message(g,`SALIDA BLOQUEADA · BUSCA TARJETA ${['ROJA','AZUL','AMARILLA'][g.level-1]}`);return;}
     if(g.materials<cfg.need){message(g,`FALTAN ${cfg.need-g.materials} MATERIALES PARA SALIR`);return;}
-    g.score+=400+Math.ceil(g.remaining)*4+g.health*60;
+    g.score+=400+g.health*60;
     if(g.level<ZONA_LEVELS.length){const next=g.level+1;g.health=Math.min(4,g.health+1);g.ammo=Math.min(22,g.ammo+7);initSector(g,next);return;}
     g.won=true;g.score+=1000;message(g,'¡INSTALACIÓN DESCONTAMINADA! MISIÓN COMPLETADA',5);return;
   }
@@ -190,8 +191,7 @@ export function stepZona(g,dt,input={}){
   g.noticeTime=Math.max(0,g.noticeTime-dt);
   g.explosions=g.explosions.filter(e=>(e.ttl-=dt)>0);
   if(g.countdown>0){g.countdown=Math.max(0,g.countdown-dt);if(g.countdown===0)message(g,'¡ADELANTE!',1);return;}
-  g.time+=dt;g.remaining=Math.max(0,cfg.seconds-g.time);
-  if(g.remaining<=0){g.lost=true;message(g,'SE HA AGOTADO EL TIEMPO DEL NIVEL',5);return;}
+  g.time+=dt;g.totalTime+=dt;
   g.a=norm(g.a+clamp(Number(input.turn)||0,-1,1)*2.15*dt+clamp(Number(input.lookDelta)||0,-.32,.32));
   const f=clamp(Number(input.forward)||0,-1,1),side=clamp(Number(input.side)||0,-1,1),mag=Math.max(1,Math.hypot(f,side)),speed=2.8*dt/mag;
   const dx=(Math.cos(g.a)*f-Math.sin(g.a)*side)*speed,dy=(Math.sin(g.a)*f+Math.cos(g.a)*side)*speed;
@@ -205,6 +205,10 @@ export function stepZona(g,dt,input={}){
     if(o.type==='botiquin'){g.health=Math.min(4,g.health+1);message(g,'BOTIQUÍN +1 SALUD');}
   });
   for(const hazard of world.toxic){if(dist(g,hazard)<.24){hurt(g,1);break;}}
+  for(let bi=0; bi<(world.barrels||[]).length; bi++){
+    if(barrelGone(g,bi)) continue;
+    if(dist(g,world.barrels[bi])<.52){hurt(g,1); message(g,'BARRIL PELIGROSO · ALÉJATE',0.8); break;}
+  }
   g.enemies.forEach((e,i)=>{
     if(e.hp<=0){e.moving=false;return;}
     e.cooldown=Math.max(0,e.cooldown-dt);e.moving=false;
@@ -236,7 +240,7 @@ export function stepZona(g,dt,input={}){
 }
 export function packZonaState(g){return {
   seed:g.seed,level:g.level,x:+g.x.toFixed(3),y:+g.y.toFixed(3),a:+g.a.toFixed(3),health:g.health,ammo:g.ammo,
-  remaining:Math.ceil(g.remaining),time:+g.time.toFixed(2),score:g.score,materials:g.materials,need:ZONA_LEVELS[g.level-1].need,hasKey:g.hasKey,
+  elapsed:+g.totalTime.toFixed(2),time:+g.time.toFixed(2),score:g.score,materials:g.materials,need:ZONA_LEVELS[g.level-1].need,hasKey:g.hasKey,
   itemsMask:g.itemsMask,barrelsMask:g.barrelsMask,countdown:+g.countdown.toFixed(2),weaponFlash:+g.weaponFlash.toFixed(2),
   enemies:g.enemies.map(e=>({x:+e.x.toFixed(2),y:+e.y.toFixed(2),hp:e.hp,kind:e.kind,moving:!!e.moving})),
   playerShots:g.playerShots.slice(0,12).map(s=>({x:+s.x.toFixed(2),y:+s.y.toFixed(2)})),
@@ -245,9 +249,9 @@ export function packZonaState(g){return {
   notice:g.noticeTime>0?g.notice:'',won:g.won,lost:g.lost,showMap:!!g.showMap
 };}
 function rounded(ctx,x,y,w,h,r,fill){ctx.fillStyle=fill; ctx.beginPath(); if(ctx.roundRect){ctx.roundRect(x,y,w,h,r);} else {ctx.rect(x,y,w,h);} ctx.fill();}
-function projectSprite(ctx,obj,rx,ry,dir,plane,zBuffer,asset,size=1){
+function projectSprite(ctx,obj,rx,ry,dir,plane,zBuffer,asset,size=1,groundOffset=.32){
   const tx=obj.x-rx, ty=obj.y-ry, det=1/(plane.x*dir.y-dir.x*plane.y); const transX=det*(dir.y*tx-dir.x*ty), transY=det*(-plane.y*tx+plane.x*ty); if(transY<=.2) return;
-  const center=Math.round(ZONA_W/2*(1+transX/transY)); const h=Math.abs(Math.round(ZONA_H/transY*size*.73)), w=h; const top=Math.round((ZONA_H-h)/2), left=center-w/2;
+  const center=Math.round(ZONA_W/2*(1+transX/transY)); const h=Math.abs(Math.round(ZONA_H/transY*size*.73)), w=h; const top=Math.round((ZONA_H-h)/2 + h*groundOffset), left=center-w/2;
   if(center+w/2<0||center-w/2>=ZONA_W) return; const image=pics[asset];
   const tint=asset==='robot1'||asset==='robot2'?'#b3c5a4':asset==='salida'?'#c7e4a4':asset==='material'?'#8fd0d4':asset==='especial'?'#ddc87f':asset==='shotEnemy'?'#ff7b7b':asset==='shotPlayer'?'#ffef88':asset==='barril'?'#6cab64':asset==='barrilRoto'?'#756a58':asset==='tarjeta'?'#f6d75a':'#c6cda0';
   for(let px=Math.max(0,Math.floor(left)); px<Math.min(ZONA_W,Math.ceil(left+w)); px+=2){ if(transY>=zBuffer[Math.floor(px/2)]-.08) continue;
@@ -279,20 +283,20 @@ export function drawZona(canvas,state,settings={}){
   }
 
   const entities=[];
-  world.items.forEach((o,i)=>{if(!((Number(state.itemsMask||0)>>>i)&1))entities.push({x:o.x,y:o.y,asset:o.type,scale:.52});});
-  (world.barrels||[]).forEach((b,i)=> entities.push({x:b.x,y:b.y,asset:((Number(state.barrelsMask||0)>>>i)&1)?'barrilRoto':'barril',scale:.54}));
+  world.items.forEach((o,i)=>{if(!((Number(state.itemsMask||0)>>>i)&1))entities.push({x:o.x,y:o.y,asset:o.type,scale:.52,groundOffset:.34});});
+  (world.barrels||[]).forEach((b,i)=> entities.push({x:b.x,y:b.y,asset:((Number(state.barrelsMask||0)>>>i)&1)?'barrilRoto':'barril',scale:.54,groundOffset:.35}));
   (state.enemies||[]).forEach(e=>{
     const kind=e.kind||'guard',prefix=kind==='drone'?'dron':kind==='heavy'?'heavy':'robot';
     const asset=e.hp<=0?prefix+'Dead':prefix+(e.moving&&Math.floor(Number(state.time||0)*8)%2?'2':'1');
-    entities.push({x:e.x,y:e.y,asset,scale:kind==='drone'?.68:kind==='heavy'?1.04:.85});
+    entities.push({x:e.x,y:e.y,asset,scale:kind==='drone'?.68:kind==='heavy'?1.04:.85,groundOffset:kind==='drone'?.08:.36});
   });
-  (state.playerShots||[]).forEach(s=>entities.push({x:s.x,y:s.y,asset:'shotPlayer',scale:.16}));
-  (state.enemyShots||[]).forEach(s=>entities.push({x:s.x,y:s.y,asset:'shotEnemy',scale:.16}));
-  world.toxic.forEach(o=>entities.push({x:o.x,y:o.y,asset:'toxic',scale:.25}));
-  (state.explosions||[]).forEach(o=>entities.push({x:o.x,y:o.y,asset:'explosion',scale:.9}));
-  entities.push({x:world.exit.x,y:world.exit.y,asset:'salida',scale:.68});
+  (state.playerShots||[]).forEach(s=>entities.push({x:s.x,y:s.y,asset:'shotPlayer',scale:.16,groundOffset:.2}));
+  (state.enemyShots||[]).forEach(s=>entities.push({x:s.x,y:s.y,asset:'shotEnemy',scale:.16,groundOffset:.2}));
+  world.toxic.forEach(o=>entities.push({x:o.x,y:o.y,asset:'toxic',scale:.25,groundOffset:.36}));
+  (state.explosions||[]).forEach(o=>entities.push({x:o.x,y:o.y,asset:'explosion',scale:.9,groundOffset:.28}));
+  entities.push({x:world.exit.x,y:world.exit.y,asset:'salida',scale:.68,groundOffset:.33});
   entities.sort((a,b)=>((b.x-pX)**2+(b.y-pY)**2)-((a.x-pX)**2+(a.y-pY)**2));
-  for(const obj of entities) projectSprite(ctx,obj,pX,pY,dir,plane,depths,obj.asset,obj.scale);
+  for(const obj of entities) projectSprite(ctx,obj,pX,pY,dir,plane,depths,obj.asset,obj.scale,obj.groundOffset ?? .32);
 
   // mira
   ctx.strokeStyle='rgba(235,245,216,.82)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(309,180); ctx.lineTo(316,180); ctx.moveTo(324,180); ctx.lineTo(331,180); ctx.moveTo(320,169); ctx.lineTo(320,176); ctx.moveTo(320,184); ctx.lineTo(320,191); ctx.stroke();
@@ -322,7 +326,8 @@ export function drawZona(canvas,state,settings={}){
   }
 
   rounded(ctx,8,8,392,29,6,'rgba(8,19,12,.85)'); ctx.fillStyle='#eef4df'; ctx.font='bold 14px monospace'; ctx.textAlign='left';
-  ctx.fillText(`N${state.level||1}/${ZONA_LEVELS.length}  ❤ ${state.health??4}   ⚡ ${state.ammo??14}   ♻ ${state.materials??0}/${state.need??4}   ${state.hasKey?'🔑':'🔒'}   ⏱ ${state.remaining??150}s`,18,28);
+  const elapsed=Math.max(0,Math.floor(Number(state.elapsed??state.totalTime??0))); const em=String(Math.floor(elapsed/60)).padStart(2,'0'); const es=String(elapsed%60).padStart(2,'0');
+  ctx.fillText(`N${state.level||1}/${ZONA_LEVELS.length}  ❤ ${state.health??4}   ⚡ ${state.ammo??14}   ♻ ${state.materials??0}/${state.need??4}   ${state.hasKey?'🔑':'🔒'}   ⏱ ${em}:${es}`,18,28);
   rounded(ctx,8,327,235,27,5,'rgba(8,19,12,.84)'); ctx.fillStyle='#e9f2d4'; ctx.fillText(`PUNTOS  ${state.score||0}`,19,346);
   if(Number(state.countdown||0)>0){
     ctx.fillStyle='rgba(4,12,6,.55)'; ctx.fillRect(0,0,ZONA_W,ZONA_H); rounded(ctx,237,104,166,108,10,'rgba(30,53,37,.95)');

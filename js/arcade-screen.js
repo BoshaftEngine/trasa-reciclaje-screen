@@ -1,4 +1,4 @@
-import {drawZona,ZONA_W,ZONA_H} from "./arcade-zona.js?v=11";
+import {drawZona,ZONA_W,ZONA_H} from "./arcade-zona.js?v=12";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
 import { MATERIALS } from "./materials.js?v=2";
 import { readLive, safeState, scoreRanking, ARCADE_GAMES } from "./arcade-common.js?v=10";
@@ -64,6 +64,14 @@ function renderRoster() {
     row.append(name, score);
     liveRoster.append(row);
   }
+}
+
+
+function formatZonaScreenTime(seconds){
+  const s=Math.max(0,Math.floor(Number(seconds)||0));
+  const mm=String(Math.floor(s/60)).padStart(2,"0");
+  const ss=String(s%60).padStart(2,"0");
+  return `${mm}:${ss}`;
 }
 
 function memoryStage(player, state) {
@@ -182,7 +190,7 @@ function zonaStage(player,state){
     zonaSpectator.previous=zonaSpectator.current;zonaSpectator.current=state;
     zonaSpectator.receivedAt=performance.now();
   }
-  zonaSpectator.info.textContent=`NIVEL ${state.level||1}/3 · PUNTOS: ${player.score} · ♻ ${state.materials||0}/${state.need||4} · SALUD: ${state.health||0} · ${state.remaining||0} s`;
+  zonaSpectator.info.textContent=`NIVEL ${state.level||1}/3 · PUNTOS: ${player.score} · ♻ ${state.materials||0}/${state.need||4} · SALUD: ${state.health||0} · TIEMPO ${formatZonaScreenTime(state.elapsed||state.totalTime||0)}`;
 }
 
 function renderStage() {

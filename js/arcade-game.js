@@ -1,4 +1,4 @@
-import {createZona, stepZona, shootZona, interactZona, packZonaState, drawZona, ZONA_W, ZONA_H} from "./arcade-zona.js?v=11";
+import {createZona, stepZona, shootZona, interactZona, packZonaState, drawZona, ZONA_W, ZONA_H} from "./arcade-zona.js?v=12";
 import {mountZonaInput} from "./zona-input.js?v=2";
 import { MATERIALS } from "./materials.js?v=2";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
@@ -21,6 +21,7 @@ const gameRoot = $("gameRoot");
 const endBlock = $("gameEnd");
 const endScore = $("endScore");
 const endText = $("endText");
+const exitCurrentGameBtn = $("exitCurrentGame");
 
 let firebase;
 let uid = "";
@@ -68,8 +69,16 @@ function scoreNow() {
   scoreText.textContent = `PUNTOS: ${session?.score || 0}`;
   clockText.textContent = session?.gameId === "run"
     ? `SOBREVIVIENDO: ${Math.floor(session.runner?.time || 0)} s`
-    : session?.gameId === "zona" ? `NIVEL ${session.zona?.level || 1}/3 · ${Math.ceil(session.zona?.remaining || 0)} s`
+    : session?.gameId === "zona" ? `NIVEL ${session.zona?.level || 1}/3 · TIEMPO ${formatZonaTime(session.zona?.totalTime || 0)}`
     : `TIEMPO: ${secondsLeft()} s`;
+}
+
+
+function formatZonaTime(totalSeconds) {
+  const secs = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const mm = String(Math.floor(secs / 60)).padStart(2, "0");
+  const ss = String(secs % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
 }
 
 function liveState() {
@@ -333,7 +342,6 @@ function zonaAnimation(timestamp){
   if(!session||session.gameId!=="zona"||session.finished||!roomOpen||blocked)return;
   const dt=runPreviousTime?(timestamp-runPreviousTime)/1000:0;runPreviousTime=timestamp;
   stepZona(session.zona,dt,zonaInput?.read());
-  if(secondsLeft()<=0)session.zona.lost=true;
   session.score=session.zona.score;
   if(zonaCanvas)drawZona(zonaCanvas,packZonaState(session.zona),{flash:session.zona.flash>0});
   scoreNow();
@@ -354,7 +362,7 @@ function startGame(gameId) {
   const now = Date.now();
   session = {
     gameId, name: nick, score: 0, startedAt: now,
-    endsAt: gameId === "run" ? Infinity : now + GAME_DURATION[gameId] * 1000,
+    endsAt: gameId === "run" || gameId === "zona" ? Infinity : now + GAME_DURATION[gameId] * 1000,
     locked: false, finished: false
   };
   if (gameId === "memory") {
@@ -386,11 +394,27 @@ function startGame(gameId) {
   timer = setInterval(() => {
     if (!session || session.finished) return;
     scoreNow();
-    if (session.gameId !== "run") {
+    if (session.gameId === "memory") {
       if (secondsLeft() <= 0) { finishGame("timeout"); return; }
+      syncLive();
+    } else if (session.gameId === "zona") {
       syncLive();
     }
   }, 1000);
+  enableButtons();
+}
+
+async function exitCurrentGame() {
+  if (!session) return;
+  clearTimers();
+  if (firebase && uid) {
+    const path = firebase.dbMod.ref(firebase.db, roomPath(`arcade/live/${uid}`));
+    try { await firebase.dbMod.set(path, null); } catch {}
+  }
+  session = null;
+  playArea.classList.add("hidden");
+  lobby.classList.remove("hidden");
+  notice(roomOpen ? "Partida cerrada. Puedes elegir otro juego." : "SALA CERRADA · Esperando a que TRASA active Arcade.");
   enableButtons();
 }
 
@@ -408,6 +432,7 @@ async function init() {
   runBtn.onclick = () => startGame("run");
   zonaBtn.onclick = () => startGame("zona");
   restartBtn.onclick = backToGames;
+  exitCurrentGameBtn.onclick = exitCurrentGame;
   enableButtons();
   if (!isFirebaseConfigured()) { notice("Firebase todavía no está configurado."); return; }
   try {
