@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TRASA · Arcade para clientes</title>
-  <link rel="stylesheet" href="css/arcade.css?v=10">
+  <link rel="stylesheet" href="css/arcade.css?v=12">
 </head>
 <body class="arcade-game-body">
   <main class="arcade-player-shell">
@@ -33,9 +33,8 @@
         <article>
           <div class="arcade-game-emoji">☣️</div>
           <h2>ZONA CONTAMINADA</h2>
-          <p>FPS retro: explora la planta, recupera 4 materiales, elimina robots y encuentra la salida antes de 3:30.</p>
+          <p>FPS retro: explora tres sectores, recupera materiales, elimina robots y encuentra la salida de cada nivel.</p>
           <button id="startZona" disabled>JUGAR ZONA CONTAMINADA</button>
-          <a class="zona-demo-link" href="zona-demo.html">PROBAR SIN FIREBASE</a>
         </article>
       </div>
     </section>
@@ -44,6 +43,7 @@
         <h1 id="playerGameTitle">TRASA ARCADE</h1>
         <div id="playerScore">PUNTOS: 0</div>
         <div id="playerClock">TIEMPO: —</div>
+        <button id="exitCurrentGame" type="button" class="arcade-exit-btn">SALIR</button>
       </div>
       <div id="gameRoot"></div>
       <div id="gameEnd" class="arcade-end hidden">
@@ -55,6 +55,6 @@
     </section>
     <footer>TRASA · Tratamiento de Residuos Antón</footer>
   </main>
-  <script type="module" src="js/arcade-game.js?v=12"></script>
+  <script type="module" src="js/arcade-game.js?v=13"></script>
 </body>
 </html>
