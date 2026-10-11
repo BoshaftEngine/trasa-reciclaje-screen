@@ -1,0 +1,17 @@
+/* TRASA SNAKE V15: integración independiente sin tocar los motores existentes */
+.arcade-game-choices{grid-template-columns:repeat(2,minmax(0,1fr));}
+.snake-game-box,.snake-stage-box{width:100%;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.snake-game-box>p{font:14px Arial,sans-serif;color:#bbd1b2;text-align:center;margin:0;}
+.snake-game-box canvas{display:block;aspect-ratio:1;width:min(100%,560px,55vh);height:auto;max-width:100%;border:2px solid #79906c;border-radius:8px;image-rendering:pixelated;touch-action:none;}
+.snake-pad{display:grid;grid-template-columns:repeat(3,minmax(55px,70px));grid-template-rows:repeat(2,50px);gap:8px;margin-top:8px;}
+.snake-pad button{min-width:0;padding:8px;background:#3f563c;color:#eff6e6;border:1px solid #99b68e;border-radius:8px;font:bold 23px Arial;touch-action:none;}
+.snake-pad .up{grid-column:2;grid-row:1}.snake-pad .left{grid-column:1;grid-row:2}.snake-pad .down{grid-column:2;grid-row:2}.snake-pad .right{grid-column:3;grid-row:2}
+#snakeFeaturedStage{align-items:center;justify-content:center;flex-direction:column;gap:6px;overflow:hidden;}
+#snakeFeaturedStage:not(.hidden){display:flex;}
+#snakeFeaturedStage canvas{display:block;width:auto;height:min(56vh,95%);max-height:100%;max-width:100%;aspect-ratio:1;object-fit:contain;image-rendering:pixelated;}
+#arcadeStage.snake-hide{display:none!important;}
+.arcade-screen-sidebar{grid-template-rows:repeat(5,minmax(0,1fr));gap:4px;}
+.arcade-sidebar-panel{padding:3px 8px;overflow:hidden;min-height:0;}
+.arcade-sidebar-panel h2{font-size:clamp(14px,1.2vw,22px);margin:0 0 3px;}
+.arcade-rank-row,.arcade-player-row{font-size:clamp(12px,.95vw,17px);margin:1px 0;line-height:1.14;}
+@media(max-width:800px){.arcade-game-choices{grid-template-columns:1fr}.snake-game-box canvas{width:min(100%,54vh,480px)}}
