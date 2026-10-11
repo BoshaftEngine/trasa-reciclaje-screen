@@ -1,4 +1,4 @@
-import {createZona, stepZona, shootZona, interactZona, packZonaState, drawZona, ZONA_W, ZONA_H} from "./arcade-zona.js?v=12";
+import {createZona, stepZona, shootZona, interactZona, packZonaState, drawZona, ZONA_W, ZONA_H} from "./arcade-zona.js?v=13";
 import {mountZonaInput} from "./zona-input.js?v=2";
 import { MATERIALS } from "./materials.js?v=2";
 import { loadFirebase, roomPath, isFirebaseConfigured } from "./common.js";
@@ -69,7 +69,7 @@ function scoreNow() {
   scoreText.textContent = `PUNTOS: ${session?.score || 0}`;
   clockText.textContent = session?.gameId === "run"
     ? `SOBREVIVIENDO: ${Math.floor(session.runner?.time || 0)} s`
-    : session?.gameId === "zona" ? `NIVEL ${session.zona?.level || 1}/3 · TIEMPO ${formatZonaTime(session.zona?.totalTime || 0)}`
+    : session?.gameId === "zona" ? `NIVEL ${session.zona?.level || 1}/6 · TIEMPO ${formatZonaTime(session.zona?.totalTime || 0)}`
     : `TIEMPO: ${secondsLeft()} s`;
 }
 
@@ -375,7 +375,7 @@ function startGame(gameId) {
   } else if (gameId === "zona") {
     session.zona = createZona();
   }
-  title.textContent = gameId === "memory" ? "MEMORY DE MATERIALES" : gameId === "zona" ? "TRASA: ZONA CONTAMINADA · 3 NIVELES" : "TRASA RUN";
+  title.textContent = gameId === "memory" ? "MEMORY DE MATERIALES" : gameId === "zona" ? "TRASA: ZONA CONTAMINADA · 6 NIVELES" : "TRASA RUN";
   lobby.classList.add("hidden");
   playArea.classList.remove("hidden");
   gameRoot.classList.remove("hidden");

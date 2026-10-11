@@ -1,11 +1,11 @@
 function formatTime(seconds){const s=Math.max(0,Math.floor(Number(seconds)||0));const mm=String(Math.floor(s/60)).padStart(2,'0');const ss=String(s%60).padStart(2,'0');return `${mm}:${ss}`;}
-import {createZona,stepZona,shootZona,interactZona,drawZona,packZonaState} from './arcade-zona.js?v=12';
+import {createZona,stepZona,shootZona,interactZona,drawZona,packZonaState,ZONA_LEVELS} from './arcade-zona.js?v=13';
 import {mountZonaInput} from './zona-input.js?v=2';
 const canvas=document.getElementById('zonaDemoCanvas');const root=document.getElementById('zonaDemoRoot');const status=document.getElementById('zonaDemoStatus');
 let game,input,last=0,frame;
 function begin(){cancelAnimationFrame(frame);input?.destroy();game=createZona();input=mountZonaInput(root,canvas,()=>shootZona(game),()=>interactZona(game),()=>{game.showMap=!game.showMap;});last=0;frame=requestAnimationFrame(loop);}
 function loop(t){const dt=last?Math.min(.05,(t-last)/1000):0;last=t;stepZona(game,dt,input.read());drawZona(canvas,packZonaState(game),{flash:game.flash>0});
-  status.textContent=game.won?'MISIÓN COMPLETADA · Pulsa NUEVA PARTIDA para seguir.':game.lost?'FIN DE PARTIDA · Inténtalo de nuevo.':`NIVEL ${game.level}/3 · MATERIALES ${game.materials}/${[4,5,6][game.level-1]} · SALUD ${game.health}/4 · TIEMPO ${formatTime(game.totalTime)} · PUNTOS ${game.score}`;
+  status.textContent=game.won?'MISIÓN COMPLETADA · Pulsa NUEVA PARTIDA para seguir.':game.lost?'FIN DE PARTIDA · Inténtalo de nuevo.':`NIVEL ${game.level}/${ZONA_LEVELS.length} · MATERIALES ${game.materials}/${ZONA_LEVELS[game.level-1].need} · SALUD ${game.health}/4 · TIEMPO ${formatTime(game.totalTime)} · PUNTOS ${game.score}`;
   if(!game.won&&!game.lost)frame=requestAnimationFrame(loop);
 }
 document.getElementById('zonaDemoRestart').onclick=begin;begin();

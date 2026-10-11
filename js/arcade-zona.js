@@ -2,12 +2,22 @@
 /* TRASA ZONA CONTAMINADA — prototipo FPS retro.
    Sustituye los PNG de assets/zona-contaminada conservando sus nombres. */
 export const ZONA_W = 640, ZONA_H = 360;
+// Los seis sectores se juegan consecutivamente. Las tarjetas roja, azul y
+// amarilla se reutilizan en sectores posteriores, por lo que no hacen falta
+// nuevos PNG. Las combinaciones y el número de enemigos cambian por nivel.
 export const ZONA_LEVELS = [
-  {name:'CLASIFICACIÓN', seconds:150, need:4, total:6, enemies:2, barrels:4, door:2, key:'tarjetaRoja'},
-  {name:'LABORATORIOS', seconds:165, need:5, total:7, enemies:4, barrels:5, door:3, key:'tarjetaAzul'},
-  {name:'NÚCLEO TÓXICO', seconds:180, need:6, total:8, enemies:5, barrels:6, door:4, key:'tarjetaAmarilla'}
+  {name:'CLASIFICACIÓN',           need:4, total:6,  kinds:['guard','guard'],                                  barrels:4, door:2, key:'tarjetaRoja',     toxic:0},
+  {name:'LABORATORIOS',           need:5, total:7,  kinds:['guard','guard','drone','heavy'],                 barrels:5, door:3, key:'tarjetaAzul',     toxic:3},
+  {name:'NÚCLEO TÓXICO',          need:6, total:8,  kinds:['guard','guard','drone','drone','heavy'],         barrels:6, door:4, key:'tarjetaAmarilla', toxic:4},
+  {name:'DEPÓSITO QUÍMICO',       need:6, total:9,  kinds:['guard','guard','guard','drone','heavy','heavy'], barrels:7, door:2, key:'tarjetaRoja',     toxic:5},
+  {name:'GALERÍAS DE CONTENCIÓN', need:7, total:10, kinds:['guard','guard','drone','drone','heavy','heavy','guard'], barrels:8, door:3, key:'tarjetaAzul', toxic:6},
+  {name:'SALA DEL REACTOR',       need:8, total:11, kinds:['guard','guard','drone','drone','heavy','heavy','heavy','drone'], barrels:9, door:4, key:'tarjetaAmarilla', toxic:7}
 ];
-export const ZONA_SECONDS = ZONA_LEVELS.reduce((sum,l)=>sum+l.seconds,0);
+// Conservado por compatibilidad con otros módulos; Zona no tiene límite de tiempo.
+export const ZONA_SECONDS = 0;
+// Mismo suelo para todos los enemigos terrestres: la altura del sprite NO lo levanta.
+export const ZONA_GUARD_SCALE = 1.20; // antes 0.85
+export const ZONA_HEAVY_SCALE = 1.48; // antes 1.04
 export const ZONA_ASSETS = {
   hormigon:'assets/zona-contaminada/pared-hormigon.png',
   metal:'assets/zona-contaminada/pared-metal.png',
@@ -44,7 +54,7 @@ export const ZONA_ASSETS = {
 };
 const pics={};
 if(typeof Image!=='undefined') for(const [k,u] of Object.entries(ZONA_ASSETS)){
-  const img=new Image(); img.onload=()=>{pics[k]=img;}; img.src=u+'?v=12';
+  const img=new Image(); img.onload=()=>{pics[k]=img;}; img.src=u+'?v=13';
 }
 const CELL=17, FOV=Math.PI/3, MAX_RAY=20;
 const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
@@ -96,10 +106,9 @@ export function makeZonaWorld(seed=2768,level=1){
   const farther=q.filter(([x,y])=>distances[y][x]>7);
   const keycard=place(cfg.key,mid.length?mid:q);
   const items=[...Array.from({length:cfg.total-1},()=>place('material',farther.length?farther:q)),place('especial',farther.length?farther:q),keycard,place('bateria',q),place('botiquin',q)];
-  const kinds=level===1?['guard','guard']:level===2?['guard','guard','drone','heavy']:['guard','guard','drone','drone','heavy'];
-  const enemies=kinds.map((kind,i)=>{const p=place('robot',farther.length?farther:q);return {...p,kind,hp:kind==='heavy'?3:kind==='drone'?1:2,id:i};});
+  const enemies=cfg.kinds.map((kind,i)=>{const p=place('robot',farther.length?farther:q);return {...p,kind,hp:kind==='heavy'?3:kind==='drone'?1:2,id:i};});
   const barrels=Array.from({length:cfg.barrels},()=>place('barril',farther.length?farther:q));
-  const toxic=level===1?[]:Array.from({length:level+1},()=>place('toxico',farther.length?farther:q));
+  const toxic=Array.from({length:cfg.toxic},()=>place('toxico',farther.length?farther:q));
   const result={seed,level,map,start,exit,items,enemies,barrels,toxic,need:cfg.need,door:cfg.door,name:cfg.name};
   if(worlds.size>=20)worlds.delete(worlds.keys().next().value);worlds.set(cache,result);return result;
 }
@@ -136,7 +145,7 @@ export function interactZona(g){
   if(!g||g.lost||g.won||g.countdown>0)return;
   const world=makeZonaWorld(g.seed,g.level),cfg=ZONA_LEVELS[g.level-1];
   if(dist(g,world.exit)<1.4){
-    if(!g.hasKey){message(g,`SALIDA BLOQUEADA · BUSCA TARJETA ${['ROJA','AZUL','AMARILLA'][g.level-1]}`);return;}
+    if(!g.hasKey){message(g,`SALIDA BLOQUEADA · BUSCA TARJETA ${cfg.door===2?'ROJA':cfg.door===3?'AZUL':'AMARILLA'}`);return;}
     if(g.materials<cfg.need){message(g,`FALTAN ${cfg.need-g.materials} MATERIALES PARA SALIR`);return;}
     g.score+=400+g.health*60;
     if(g.level<ZONA_LEVELS.length){const next=g.level+1;g.health=Math.min(4,g.health+1);g.ammo=Math.min(22,g.ammo+7);initSector(g,next);return;}
@@ -249,9 +258,15 @@ export function packZonaState(g){return {
   notice:g.noticeTime>0?g.notice:'',won:g.won,lost:g.lost,showMap:!!g.showMap
 };}
 function rounded(ctx,x,y,w,h,r,fill){ctx.fillStyle=fill; ctx.beginPath(); if(ctx.roundRect){ctx.roundRect(x,y,w,h,r);} else {ctx.rect(x,y,w,h);} ctx.fill();}
-function projectSprite(ctx,obj,rx,ry,dir,plane,zBuffer,asset,size=1,groundOffset=.32){
+function projectSprite(ctx,obj,rx,ry,dir,plane,zBuffer,asset,size=1,groundOffset=.32,grounded=false){
   const tx=obj.x-rx, ty=obj.y-ry, det=1/(plane.x*dir.y-dir.x*plane.y); const transX=det*(dir.y*tx-dir.x*ty), transY=det*(-plane.y*tx+plane.x*ty); if(transY<=.2) return;
-  const center=Math.round(ZONA_W/2*(1+transX/transY)); const h=Math.abs(Math.round(ZONA_H/transY*size*.73)), w=h; const top=Math.round((ZONA_H-h)/2 + h*groundOffset), left=center-w/2;
+  const center=Math.round(ZONA_W/2*(1+transX/transY));
+  const h=Math.abs(Math.round(ZONA_H/transY*size*.73)), w=h;
+  // Para robots terrestres, el punto de contacto de los pies está sobre el
+  // plano del suelo. Al ampliar la imagen solo crecen hacia arriba.
+  const feetY = ZONA_H/2 + ZONA_H/(2*transY) + h*.045; // margen inferior transparente del PNG
+  const top = Math.round(grounded ? feetY-h : (ZONA_H-h)/2+h*groundOffset);
+  const left=center-w/2;
   if(center+w/2<0||center-w/2>=ZONA_W) return; const image=pics[asset];
   const tint=asset==='robot1'||asset==='robot2'?'#b3c5a4':asset==='salida'?'#c7e4a4':asset==='material'?'#8fd0d4':asset==='especial'?'#ddc87f':asset==='shotEnemy'?'#ff7b7b':asset==='shotPlayer'?'#ffef88':asset==='barril'?'#6cab64':asset==='barrilRoto'?'#756a58':asset==='tarjeta'?'#f6d75a':'#c6cda0';
   for(let px=Math.max(0,Math.floor(left)); px<Math.min(ZONA_W,Math.ceil(left+w)); px+=2){ if(transY>=zBuffer[Math.floor(px/2)]-.08) continue;
@@ -262,8 +277,18 @@ export function drawZona(canvas,state,settings={}){
   const ctx=canvas.getContext('2d'); if(!ctx) return;
   const world=makeZonaWorld(state.seed,state.level||1); const pX=Number(state.x??1.5), pY=Number(state.y??1.5), a=Number(state.a??0);
   const dir={x:Math.cos(a),y:Math.sin(a)}, plane={x:-dir.y*Math.tan(FOV/2), y:dir.x*Math.tan(FOV/2)};
-  ctx.fillStyle='#27332d'; ctx.fillRect(0,0,ZONA_W,ZONA_H/2);
-  const gradient=ctx.createLinearGradient(0,ZONA_H/2,0,ZONA_H); gradient.addColorStop(0,'#3d483c'); gradient.addColorStop(1,'#151d18'); ctx.fillStyle=gradient; ctx.fillRect(0,ZONA_H/2,ZONA_W,ZONA_H/2);
+  const zoneColors=[
+    ['#27332d','#3d483c','#151d18'], // clasificación
+    ['#25383d','#354d51','#152023'], // laboratorios
+    ['#403527','#4e4333','#231d16'], // núcleo tóxico
+    ['#392d34','#463940','#1e171b'], // depósito químico
+    ['#283541','#374655','#161c28'], // galerías
+    ['#3e3d29','#494b31','#1d2116']  // reactor
+  ][Math.max(0,Math.min(ZONA_LEVELS.length-1,Number(state.level||1)-1))];
+  ctx.fillStyle=zoneColors[0]; ctx.fillRect(0,0,ZONA_W,ZONA_H/2);
+  const gradient=ctx.createLinearGradient(0,ZONA_H/2,0,ZONA_H);
+  gradient.addColorStop(0,zoneColors[1]); gradient.addColorStop(1,zoneColors[2]);
+  ctx.fillStyle=gradient; ctx.fillRect(0,ZONA_H/2,ZONA_W,ZONA_H/2);
   // Se eliminan las rayas animadas del suelo a la derecha del arma.
   const depths=new Float32Array(ZONA_W/2);
   for(let col=0; col<ZONA_W/2; col++){
@@ -288,7 +313,11 @@ export function drawZona(canvas,state,settings={}){
   (state.enemies||[]).forEach(e=>{
     const kind=e.kind||'guard',prefix=kind==='drone'?'dron':kind==='heavy'?'heavy':'robot';
     const asset=e.hp<=0?prefix+'Dead':prefix+(e.moving&&Math.floor(Number(state.time||0)*8)%2?'2':'1');
-    entities.push({x:e.x,y:e.y,asset,scale:kind==='drone'?.68:kind==='heavy'?1.04:.85,groundOffset:kind==='drone'?.08:.36});
+    // Los guardias y robots pesados aumentan de altura sin dejar de apoyar
+    // los pies en el suelo; únicamente los drones conservan el vuelo.
+    entities.push({x:e.x,y:e.y,asset,
+      scale:kind==='drone'?.68:kind==='heavy'?ZONA_HEAVY_SCALE:ZONA_GUARD_SCALE,
+      groundOffset:kind==='drone'?.08:.36,grounded:kind!=='drone'});
   });
   (state.playerShots||[]).forEach(s=>entities.push({x:s.x,y:s.y,asset:'shotPlayer',scale:.16,groundOffset:.2}));
   (state.enemyShots||[]).forEach(s=>entities.push({x:s.x,y:s.y,asset:'shotEnemy',scale:.16,groundOffset:.2}));
@@ -296,7 +325,7 @@ export function drawZona(canvas,state,settings={}){
   (state.explosions||[]).forEach(o=>entities.push({x:o.x,y:o.y,asset:'explosion',scale:.9,groundOffset:.28}));
   entities.push({x:world.exit.x,y:world.exit.y,asset:'salida',scale:.68,groundOffset:.33});
   entities.sort((a,b)=>((b.x-pX)**2+(b.y-pY)**2)-((a.x-pX)**2+(a.y-pY)**2));
-  for(const obj of entities) projectSprite(ctx,obj,pX,pY,dir,plane,depths,obj.asset,obj.scale,obj.groundOffset ?? .32);
+  for(const obj of entities) projectSprite(ctx,obj,pX,pY,dir,plane,depths,obj.asset,obj.scale,obj.groundOffset ?? .32,obj.grounded===true);
 
   // mira
   ctx.strokeStyle='rgba(235,245,216,.82)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(309,180); ctx.lineTo(316,180); ctx.moveTo(324,180); ctx.lineTo(331,180); ctx.moveTo(320,169); ctx.lineTo(320,176); ctx.moveTo(320,184); ctx.lineTo(320,191); ctx.stroke();
