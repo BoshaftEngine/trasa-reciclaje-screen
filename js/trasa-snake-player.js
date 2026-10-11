@@ -15,7 +15,7 @@ function syncLive(force=false,status='playing'){
  const now=Date.now();if(!force&&now-lastSync<250)return liveWrites;lastSync=now;
  const data={gameId:'snake',name:snake.name,status,score:snake.score,startedAt:snake.startedAt,updatedAt:fb.dbMod.serverTimestamp(),state:JSON.stringify(packSnakeState(snake))};
  const target=fb.dbMod.ref(fb.db,path('live/'+uid));
- liveWrites=liveWrites.catch(()=>{}).then(()=>fb.dbMod.set(target,data)).catch(e=>console.warn('Snake live:',e));
+ liveWrites=liveWrites.catch(()=>{}).then(()=>fb.dbMod.set(target,data)).catch(e=>{console.warn('Snake live:',e);const el=$('roomStatus');if(el)el.textContent='SNAKE: no se retransmite la partida. Publica las reglas Firebase V16.';});
  return liveWrites;
 }
 async function saveResult(){
@@ -26,7 +26,7 @@ async function saveResult(){
   await fb.dbMod.runTransaction(scores,current=>{if(current&&Number(current.score)>g.score)return;return{name:g.name,score:g.score,updatedAt:Date.now()};});
   const h=fb.dbMod.push(fb.dbMod.ref(fb.db,path('history/snake/'+uidNow)));
   await fb.dbMod.set(h,{name:g.name,score:g.score,finishedAt:fb.dbMod.serverTimestamp()});
- }catch(error){console.warn('Reglas Firebase de SNAKE pendientes:',error);$('endText').textContent+=' · No se pudo guardar el récord: revisa las reglas de Firebase.';}
+ }catch(error){console.warn('Reglas Firebase de SNAKE pendientes:',error);$('endText').textContent+=' · Error Firebase: no se guardó el récord. Publica las reglas V16.';}
 }
 function clean(){cancelAnimationFrame(frame);frame=0;prev=0;}
 async function exitSnake(){

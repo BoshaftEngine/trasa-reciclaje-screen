@@ -10,7 +10,7 @@
 #snakeFeaturedStage:not(.hidden){display:flex;}
 #snakeFeaturedStage canvas{display:block;width:auto;height:min(56vh,95%);max-height:100%;max-width:100%;aspect-ratio:1;object-fit:contain;image-rendering:pixelated;}
 #arcadeStage.snake-hide{display:none!important;}
-.arcade-screen-sidebar{grid-template-rows:repeat(5,minmax(0,1fr));gap:4px;}
+.arcade-screen-sidebar{grid-template-rows:repeat(4,minmax(0,1fr));gap:4px;}
 .arcade-sidebar-panel{padding:3px 8px;overflow:hidden;min-height:0;}
 .arcade-sidebar-panel h2{font-size:clamp(14px,1.2vw,22px);margin:0 0 3px;}
 .arcade-rank-row,.arcade-player-row{font-size:clamp(12px,.95vw,17px);margin:1px 0;line-height:1.14;}

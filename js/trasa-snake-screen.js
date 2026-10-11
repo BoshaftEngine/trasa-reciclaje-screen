@@ -3,7 +3,7 @@
 import {drawSnakeScene,SNAKE_CANVAS} from './arcade-snake.js?v=15';
 import {loadFirebase,roomPath,isFirebaseConfigured} from './common.js';
 const primary=document.getElementById('arcadeStage'),overlay=document.getElementById('snakeFeaturedStage');
-const board=document.getElementById('arcadeSnakeRank'),arcade=document.getElementById('arcadeView');
+const board=document.getElementById('arcadeSnakeRank'),arcade=document.getElementById('arcadeView'),featuredName=document.getElementById('arcadeFeaturedName');
 let live={},display={},currentUid='',canvas=null,info=null,raf=0,last=0,gameState=null;
 const safe=value=>{try{return JSON.parse(value||'{}');}catch{return {};}};
 function renderRanking(val){
@@ -37,9 +37,9 @@ function reconcile(){
 }
 async function init(){if(!isFirebaseConfigured())return;try{
  const f=await loadFirebase();await f.authMod.signInAnonymously(f.auth);
- f.dbMod.onValue(f.dbMod.ref(f.db,roomPath('display')),snap=>{display=snap.val()||{};reconcile();});
- f.dbMod.onValue(f.dbMod.ref(f.db,roomPath('arcade/live')),snap=>{live=snap.val()||{};reconcile();});
- f.dbMod.onValue(f.dbMod.ref(f.db,roomPath('arcade/scores/snake')),snap=>renderRanking(snap.val()));
+ f.dbMod.onValue(f.dbMod.ref(f.db,roomPath('display')),snap=>{display=snap.val()||{};reconcile();}, error=>console.warn('Snake display Firebase:',error));
+ f.dbMod.onValue(f.dbMod.ref(f.db,roomPath('arcade/live')),snap=>{live=snap.val()||{};reconcile();}, error=>console.warn('Snake en directo (reglas Firebase):',error));
+ f.dbMod.onValue(f.dbMod.ref(f.db,roomPath('arcade/scores/snake')),snap=>renderRanking(snap.val()), error=>{if(board)board.textContent='No se puede leer TOP 5 Snake: revisa las reglas Firebase';console.warn('Snake TOP:',error);});
  setInterval(reconcile,7000);
  }catch(error){console.warn('TRASA SNAKE pantalla:',error);if(board)board.textContent='Revisa las reglas Firebase de Snake';}}
 init();

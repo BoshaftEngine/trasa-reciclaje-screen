@@ -2,11 +2,10 @@
 export const ARCADE_GAMES = [
   { id: "memory", name: "MEMORY DE MATERIALES", short: "Memory" },
   { id: "run", name: "TRASA RUN", short: "Run" },
-  { id: "zona", name: "ZONA CONTAMINADA", short: "Zona" }
+  { id: "zona", name: "ZONA CONTAMINADA", short: "Zona" },
+  { id: "snake", name: "TRASA SNAKE", short: "Snake" }
 ];
-
 export const GAME_DURATION = { memory: 90, zona: 540 };
-
 export const shuffle = source => {
   const result = [...source];
   for (let index = result.length - 1; index > 0; index--) {
@@ -15,33 +14,17 @@ export const shuffle = source => {
   }
   return result;
 };
-
-export function cleanName(value) {
-  return String(value || "").trim().replace(/\s+/g, " ").slice(0, 18);
-}
-
+export function cleanName(value) {return String(value || "").trim().replace(/\s+/g," ").slice(0,18);}
 export function readLive(snapshotValue) {
   const now = Date.now();
-  return Object.entries(snapshotValue || {})
-    .map(([uid, info]) => ({ uid, ...info }))
+  return Object.entries(snapshotValue || {}).map(([uid, info]) => ({uid, ...info}))
     .filter(info =>
-      (info.gameId === "memory" || info.gameId === "run" || info.gameId === "zona") &&
-      typeof info.name === "string" &&
-      Number(info.updatedAt || 0) > now - 22000 &&
-      info.status === "playing"
-    )
-    .sort((a, b) => Number(a.startedAt || 0) - Number(b.startedAt || 0));
+      ["memory","run","zona","snake"].includes(info.gameId) &&
+      typeof info.name === "string" && Number(info.updatedAt || 0) > now - 22000 &&
+      info.status === "playing")
+    .sort((a,b)=>Number(a.startedAt || 0)-Number(b.startedAt || 0));
 }
-
-export function safeState(value) {
-  try { return JSON.parse(value || "{}"); } catch { return {}; }
-}
-
-// TOP 5: mejor marca de CINCO UID anónimos distintos, NO por IP.
-export function scoreRanking(items) {
-  return Object.entries(items || {})
-    .map(([uid, item]) => ({ uid, ...item }))
-    .filter(item => Number.isFinite(Number(item.score)) && typeof item.name === "string")
-    .sort((a, b) => Number(b.score) - Number(a.score) || a.name.localeCompare(b.name, "es"))
-    .slice(0, 5);
-}
+export function safeState(value) {try {return JSON.parse(value || "{}");} catch {return {};}}
+export function scoreRanking(items) {return Object.entries(items || {}).map(([uid,item])=>({uid,...item}))
+  .filter(item=>Number.isFinite(Number(item.score))&&typeof item.name === "string")
+  .sort((a,b)=>Number(b.score)-Number(a.score)||a.name.localeCompare(b.name,"es")).slice(0,5);}
