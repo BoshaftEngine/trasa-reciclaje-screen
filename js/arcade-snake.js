@@ -109,7 +109,7 @@ if(typeof Image!=='undefined'){
     const img=new Image();
     img.onload=()=>{images[key]=img;};
     img.onerror=()=>{delete images[key];};
-    img.src=path+'?v=15';
+    img.src=path+'?v=18';
   }
 }
 function rounded(ctx,x,y,w,h,r,fill){

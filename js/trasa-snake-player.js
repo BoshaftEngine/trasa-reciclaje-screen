@@ -1,12 +1,15 @@
 /* TRASA SNAKE V15 compatible con TRASA Arcade V13 publicado.
    Añade el cuarto juego sin modificar los scripts de los otros tres. */
-import {createSnake,turnSnake,stepSnake,packSnakeState,drawSnakeScene,SNAKE_CANVAS} from './arcade-snake.js?v=15';
+import {createSnake,turnSnake,stepSnake,packSnakeState,drawSnakeScene,SNAKE_CANVAS} from './arcade-snake.js?v=18';
 import {loadFirebase,roomPath,isFirebaseConfigured} from './common.js';
 const $=id=>document.getElementById(id);
 const startBtn=$('startSnake'),lobby=$('arcadeLobby'),play=$('arcadePlayArea'),root=$('gameRoot'),nick=$('nickname');
 const end=$('gameEnd'),score=$('playerScore'),clock=$('playerClock'),headline=$('playerGameTitle');
 let fb=null,uid='',roomOpen=false,blocked=false,snake=null,frame=0,prev=0,lastSync=0,liveWrites=Promise.resolve(),closing=false;
+let snakeError=false;
 const path=part=>roomPath('arcade/'+part);
+function diagnostic(msg){snakeError=true;let el=$('snakeFirebaseError');if(!el){el=document.createElement('p');el.id='snakeFirebaseError';el.className='snake-firebase-warning';root?.parentElement?.append(el);}if(el)el.textContent=msg;console.error('TRASA SNAKE V18:',msg);}
+function clearDiagnostic(){snakeError=false;const el=$('snakeFirebaseError');if(el)el.remove();}
 const gameActive=()=>snake && !snake.lost&&!snake.won&&!closing;
 function canStart(){startBtn.disabled=!(fb&&uid&&roomOpen&&!blocked&&!snake&&lobby&&!lobby.classList.contains('hidden'));}
 function repaint(){if(!snake)return;drawSnakeScene($('trasaSnakeCanvas'),packSnakeState(snake));score.textContent=`PUNTOS: ${snake.score}`;clock.textContent=`MATERIALES: ${snake.foods} · ${Math.floor(snake.elapsed)} s`;}
@@ -15,7 +18,7 @@ function syncLive(force=false,status='playing'){
  const now=Date.now();if(!force&&now-lastSync<250)return liveWrites;lastSync=now;
  const data={gameId:'snake',name:snake.name,status,score:snake.score,startedAt:snake.startedAt,updatedAt:fb.dbMod.serverTimestamp(),state:JSON.stringify(packSnakeState(snake))};
  const target=fb.dbMod.ref(fb.db,path('live/'+uid));
- liveWrites=liveWrites.catch(()=>{}).then(()=>fb.dbMod.set(target,data)).catch(e=>{console.warn('Snake live:',e);const el=$('roomStatus');if(el)el.textContent='SNAKE: no se retransmite la partida. Publica las reglas Firebase V16.';});
+ liveWrites=liveWrites.catch(()=>{}).then(()=>fb.dbMod.set(target,data)).then(()=>{if(snakeError)clearDiagnostic();}).catch(e=>{diagnostic('Snake no se retransmite en GTA: Firebase rechazó arcade/live. Comprueba las reglas publicadas en Realtime Database → Rules. '+e.message);});
  return liveWrites;
 }
 async function saveResult(){
@@ -26,7 +29,7 @@ async function saveResult(){
   await fb.dbMod.runTransaction(scores,current=>{if(current&&Number(current.score)>g.score)return;return{name:g.name,score:g.score,updatedAt:Date.now()};});
   const h=fb.dbMod.push(fb.dbMod.ref(fb.db,path('history/snake/'+uidNow)));
   await fb.dbMod.set(h,{name:g.name,score:g.score,finishedAt:fb.dbMod.serverTimestamp()});
- }catch(error){console.warn('Reglas Firebase de SNAKE pendientes:',error);$('endText').textContent+=' · Error Firebase: no se guardó el récord. Publica las reglas V16.';}
+ }catch(error){diagnostic('Snake no pudo guardar el récord en arcade/scores/snake o arcade/history/snake. Revisa las reglas publicadas: '+error.message);$('endText').textContent+=' · No se guardó la puntuación en Firebase. Revisa los permisos de Snake.';}
 }
 function clean(){cancelAnimationFrame(frame);frame=0;prev=0;}
 async function exitSnake(){
@@ -52,7 +55,7 @@ function startSnake(){
  const name=String(nick.value||'').trim().replace(/\s+/g,' ').slice(0,18);
  if(name.length<2){$('roomStatus').textContent='Escribe un nombre de al menos 2 caracteres.';nick.focus();return;}
  try{localStorage.setItem('trasa-arcade-nick',name);}catch{}
- snake=createSnake();snake.name=name;snake.startedAt=Date.now();lastSync=0;closing=false;
+ clearDiagnostic();snake=createSnake();snake.name=name;snake.startedAt=Date.now();lastSync=0;closing=false;
  headline.textContent='TRASA SNAKE';lobby.classList.add('hidden');play.classList.remove('hidden');root.classList.remove('hidden');end.classList.add('hidden');root.replaceChildren();
  const box=document.createElement('div');box.className='snake-game-box';
  const help=document.createElement('p');help.textContent='FLECHAS O WASD · MÓVIL: BOTONES O DESLIZAR';
@@ -79,7 +82,7 @@ async function init(){
   fb.dbMod.onValue(fb.dbMod.ref(fb.db,roomPath('display')),snap=>{roomOpen=(snap.val()||{}).mode==='arcade';if(!roomOpen&&snake)exitSnake();canStart();});
   fb.dbMod.onValue(fb.dbMod.ref(fb.db,path('bans/'+uid)),snap=>{blocked=snap.exists();if(blocked&&snake)exitSnake();canStart();});
   fb.dbMod.onValue(fb.dbMod.ref(fb.db,path('resetAt')),snap=>{if(snake&&Number(snap.val()||0)>=snake.startedAt)exitSnake();});
- }catch(error){console.error('TRASA SNAKE Firebase:',error);startBtn.title='Error al conectar Firebase';}
+ }catch(error){diagnostic('No fue posible conectar TRASA SNAKE con Firebase: '+error.message);startBtn.title='Error al conectar Firebase';}
  canStart();
 }
 init();

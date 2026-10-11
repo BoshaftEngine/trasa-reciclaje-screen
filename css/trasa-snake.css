@@ -15,3 +15,9 @@
 .arcade-sidebar-panel h2{font-size:clamp(14px,1.2vw,22px);margin:0 0 3px;}
 .arcade-rank-row,.arcade-player-row{font-size:clamp(12px,.95vw,17px);margin:1px 0;line-height:1.14;}
 @media(max-width:800px){.arcade-game-choices{grid-template-columns:1fr}.snake-game-box canvas{width:min(100%,54vh,480px)}}
+
+/* V18: solo cuatro rankings, sin bloque En Directo */
+#arcadePlayers {display:none!important}
+.snake-firebase-warning{margin:10px auto;max-width:680px;padding:10px 12px;background:#622b27;color:#fff0e8;border:1px solid #e6a697;border-radius:7px;font:bold 14px Arial,sans-serif;line-height:1.4}
+.snake-projection-canvas{max-height:100%;max-width:100%;object-fit:contain}
+.snake-build-version{color:#a3b696;font:12px Arial,sans-serif;letter-spacing:0}
