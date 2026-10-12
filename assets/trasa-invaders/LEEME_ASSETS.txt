@@ -1,0 +1,19 @@
+TRASA INVADERS — 11 PNG sustituibles
+
+Archivos:
+  nave-jugador.png — nave controlada por el jugador
+  nave-danada.png — variante de nave tras perder salud
+  marciano-1.png — filas inferiores
+  marciano-2.png — filas intermedias
+  marciano-3.png — fila superior
+  nave-jefe.png — nave especial que cruza la parte alta
+  disparo-jugador.png — proyectil amarillo
+  disparo-marciano.png — proyectil rojo
+  escudo.png — pieza de barrera defensiva
+  explosion.png — efecto al destruir un enemigo
+  fondo.png — fondo del nivel (recomendado 640x480)
+
+Mantén exactamente el nombre de cada archivo y conserva el canal alfa en los sprites.
+Puedes sustituir cada PNG sin editar JS. 64x64 / 128x128 son tamaños adecuados.
+El fondo cubre todo el canvas 640x480 y puede ser una imagen opaca.
+Se usa dibujo de respaldo si un PNG falta o todavía no se ha cargado.

@@ -1,0 +1,19 @@
+/* TRASA INVADERS V19. Clases exclusivas del quinto minijuego. */
+.arcade-game-choices{grid-template-columns:repeat(2,minmax(0,1fr));}
+.invaders-game-box{min-height:0;min-width:0;display:flex;align-items:center;flex-direction:column;gap:8px;}
+.invaders-game-box>p{margin:0;text-align:center;color:#d8e4d1;font:12px/1.4 Arial,sans-serif;}
+.invaders-game-box canvas{display:block;width:min(100%,640px,75vw);max-width:100%;height:auto;aspect-ratio:4/3;border:2px solid #718c68;border-radius:9px;image-rendering:pixelated;background:#122118;touch-action:none;}
+.invaders-pad{display:grid;grid-template-columns:minmax(72px,100px) minmax(125px,180px) minmax(72px,100px);gap:9px;width:min(100%,405px);user-select:none;touch-action:none;}
+.invaders-pad button{border:1px solid #98b187;border-radius:8px;background:#344e37;color:#e7f3df;font:bold 20px Arial,sans-serif;padding:13px 4px;min-height:56px;touch-action:none;}
+.invaders-pad .invaders-fire{background:#5d5631;color:#fff1b5;border-color:#ceb676;font-size:17px;}
+.invaders-featured-stage{display:none;align-items:center;justify-content:center;flex-direction:column;overflow:hidden;gap:5px;min-height:0;}
+.invaders-featured-stage:not(.hidden){display:flex;}
+.invaders-featured-stage canvas{display:block;width:min(100%,840px);height:auto;max-height:100%;aspect-ratio:4/3;object-fit:contain;image-rendering:pixelated;}
+#arcadeStage.invaders-hide,#snakeFeaturedStage.invaders-hide{display:none!important;}
+.arcade-screen-sidebar{grid-template-rows:repeat(5,minmax(0,1fr));gap:4px;}
+.arcade-sidebar-panel{padding:3px 7px;min-height:0;overflow:hidden;}
+.arcade-sidebar-panel h2{font-size:clamp(12px,1.08vw,21px);margin:0 0 2px;}
+.arcade-rank-row,.arcade-player-row{font-size:clamp(11px,.89vw,16px);line-height:1.12;margin:1px 0;}
+.invaders-warning{margin:10px auto;max-width:700px;padding:11px;background:#612921;color:#fff0e2;border:1px solid #e1a392;border-radius:7px;font:14px/1.4 Arial,sans-serif;}
+@media(max-width:800px){.arcade-game-choices{grid-template-columns:1fr;}.invaders-game-box canvas{width:min(100%,620px);}.invaders-pad button{min-height:60px;}}
+@media(max-height:650px){.arcade-sidebar-panel h2{font-size:13px}.arcade-rank-row{font-size:11px}.invaders-game-box canvas{max-height:55vh;width:auto;}}
