@@ -1,0 +1,1 @@
+PNG de casillas editables 128x128: casilla-clara.png, casilla-oscura.png, casilla-seleccionada.png. Sustituir por PNG manteniendo el nombre.

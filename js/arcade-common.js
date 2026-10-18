@@ -4,7 +4,8 @@ export const ARCADE_GAMES = [
   { id: "run", name: "TRASA RUN", short: "Run" },
   { id: "zona", name: "ZONA CONTAMINADA", short: "Zona" },
   { id: "snake", name: "TRASA SNAKE", short: "Snake" },
-  { id: "invaders", name: "TRASA INVADERS", short: "Invaders" }
+  { id: "invaders", name: "TRASA INVADERS", short: "Invaders" },
+  { id: "sudoku", name: "TRASA SUDOKU", short: "Sudoku" }
 ];
 export const GAME_DURATION = { memory: 90, zona: 540 };
 export const shuffle = source => {
@@ -20,7 +21,7 @@ export function readLive(snapshotValue) {
   const now = Date.now();
   return Object.entries(snapshotValue || {}).map(([uid, info]) => ({uid, ...info}))
     .filter(info =>
-      ["memory","run","zona","snake","invaders"].includes(info.gameId) &&
+      ["memory","run","zona","snake","invaders","sudoku"].includes(info.gameId) &&
       typeof info.name === "string" && Number(info.updatedAt || 0) > now - 22000 &&
       info.status === "playing")
     .sort((a,b)=>Number(a.startedAt || 0)-Number(b.startedAt || 0));
