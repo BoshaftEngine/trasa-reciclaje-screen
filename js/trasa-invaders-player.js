@@ -1,5 +1,5 @@
 /* V19: adaptador para la página de juego del TRASA Arcade V18. No modifica Memory, Run, Zona ni Snake. */
-import {createInvaders,stepInvaders,packInvadersState,drawInvadersScene,INVADERS_WIDTH,INVADERS_HEIGHT} from './arcade-invaders.js?v=19';
+import {createInvaders,stepInvaders,packInvadersState,drawInvadersScene,INVADERS_WIDTH,INVADERS_HEIGHT} from './arcade-invaders.js?v=20';
 import {loadFirebase,roomPath,isFirebaseConfigured} from './common.js';
 const $=id=>document.getElementById(id);
 const startBtn=$('startInvaders'),lobby=$('arcadeLobby'),play=$('arcadePlayArea'),root=$('gameRoot'),nick=$('nickname');

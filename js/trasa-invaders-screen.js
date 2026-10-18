@@ -1,5 +1,5 @@
 /* V19: proyector para Invaders, compatible con la pantalla principal de TRASA Arcade V18. */
-import {drawInvadersScene,INVADERS_WIDTH,INVADERS_HEIGHT} from './arcade-invaders.js?v=19';
+import {drawInvadersScene,INVADERS_WIDTH,INVADERS_HEIGHT} from './arcade-invaders.js?v=20';
 import {loadFirebase,roomPath,isFirebaseConfigured} from './common.js';
 const root=document.getElementById('arcadeView'),main=document.getElementById('arcadeStage');
 const overlay=document.getElementById('invadersFeaturedStage'),rank=document.getElementById('arcadeInvadersRank');

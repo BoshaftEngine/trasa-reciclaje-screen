@@ -1,4 +1,4 @@
-/* TRASA INVADERS V19 — motor compartido entre jugador y proyector.
+/* TRASA INVADERS V20 — reto equilibrado con oleadas más intensas.
    Cinco oleadas, disparos, escudos que se rompen y nave de bonificación.
    Canvas independiente y sprites PNG intercambiables en assets/trasa-invaders/. */
 export const INVADERS_WIDTH=640;
@@ -21,7 +21,7 @@ export const INVADERS_ASSETS={
 };
 const sprites={};
 if(typeof Image!=='undefined')for(const [key,path] of Object.entries(INVADERS_ASSETS)){
-  const img=new Image();sprites[key]=img;img.src=path+'?v=19';
+  const img=new Image();sprites[key]=img;img.src=path+'?v=20';
 }
 const clamp=(a,min,max)=>Math.min(max,Math.max(min,a));
 const rand=(random=Math.random)=>clamp(Number(random())||0,0,.999999);
@@ -44,7 +44,19 @@ function allAliens(g){
 function setupWave(g){
  g.phase='starting';g.countdown=2.6;g.groupX=LEFT;g.groupY=TOP+Math.min(g.wave-1,4)*8;
  g.direction=1;g.dead=new Set();g.shieldDead=new Set();g.playerBullets=[];g.enemyBullets=[];g.explosions=[];
- g.ufo=null;g.ufoTimer=12+rand(g.random)*5;g.fireTimer=1.1;g.waveMessage=2.4;
+ // Blindaje adicional desde la tercera oleada. Un punto de vida extra.
+ g.armor=new Map();
+ if(g.wave>=3)for(let col=0;col<COLS;col++)g.armor.set(col,2);
+ if(g.wave>=5)for(let col=0;col<COLS;col+=2)g.armor.set(COLS+col,2);
+ // Los escudos vuelven al empezar la oleada, pero cada vez con más huecos.
+ // La primera oleada mantiene las defensas completas para aprender.
+ for(let n=0;n<Math.max(0,(g.wave-1)*5);n++){
+   const existing=shields.filter(c=>!g.shieldDead.has(c.id));
+   if(!existing.length)break;
+   const target=existing[Math.floor(rand(g.random)*existing.length)];
+   g.shieldDead.add(target.id);
+ }
+ g.ufo=null;g.ufoTimer=10+rand(g.random)*5;g.fireTimer=1.05;g.waveMessage=2.4;
  g.x=INVADERS_WIDTH/2;g.shotCooldown=0;g.invulnerable=1.0;
 }
 export function createInvaders(random=Math.random){
@@ -79,14 +91,14 @@ export function stepInvaders(g,delta,controls={}){
    g.playerBullets.push({x:g.x,y:413});g.shotCooldown=.23;
  }
  const enemies=allAliens(g);
- const speed=(21+(g.wave-1)*8)+(45-enemies.length)*.45;
+ const speed=(27+(g.wave-1)*9)+(45-enemies.length)*.58;
  g.groupX+=g.direction*speed*dt;
  const updated=allAliens(g);
  const xs=updated.map(e=>e.x);
  if(xs.length){
    if((g.direction>0&&Math.max(...xs)+26>=INVADERS_WIDTH-25)||
        (g.direction<0&&Math.min(...xs)-18<=20)){
-       g.groupX-=g.direction*speed*dt;g.direction*=-1;g.groupY+=13;
+       g.groupX-=g.direction*speed*dt;g.direction*=-1;g.groupY+=15+(g.wave-1)*1.5;
    }
    if(updated.some(e=>e.y+22>=397)){g.phase='lost';g.reason='Los marcianos han llegado a TRASA';return;}
  }
@@ -96,9 +108,23 @@ export function stepInvaders(g,delta,controls={}){
  if(g.ufo){g.ufo.x+=(82+g.wave*10)*dt;if(g.ufo.x>INVADERS_WIDTH+50)g.ufo=null;}
  g.fireTimer-=dt;
  if(g.fireTimer<=0&&updated.length){
-   const chosen=updated[Math.floor(rand(g.random)*updated.length)];
-   if(g.enemyBullets.length<9)g.enemyBullets.push({x:chosen.x+6,y:chosen.y+18});
-   g.fireTimer=Math.max(.32,1.4-.15*g.wave)+rand(g.random)*.65;
+   // Disparan únicamente los invasores más bajos de cada columna.
+   // Algunas balas apuntan a la nave, pero pueden esquivarse moviéndose.
+   const shooters=updated.filter(a=>!updated.some(b=>b.col===a.col&&b.row>a.row));
+   const fire=()=>{
+     if(g.enemyBullets.length>=12||!shooters.length)return;
+     const chosen=shooters[Math.floor(rand(g.random)*shooters.length)];
+     const startX=chosen.x+6,startY=chosen.y+18;
+     const vy=192+g.wave*27;
+     const targetTime=Math.max(.55,(427-startY)/vy);
+     const guided=rand(g.random)<(.21+g.wave*.085);
+     const vx=guided?clamp((g.x-startX)/targetTime,-100,100):0;
+     g.enemyBullets.push({x:startX,y:startY,vx,vy,aimed:guided});
+   };
+   fire();
+   // Desde la tercera oleada pueden lanzar dos proyectiles por ráfaga.
+   if(g.wave>=3&&rand(g.random)<(.12+(g.wave-3)*.08))fire();
+   g.fireTimer=Math.max(.5,1.24-.13*g.wave)+rand(g.random)*.32;
  }
  // Proyectiles propios: barreras, platillos y marcianos.
  for(const b of g.playerBullets)b.y-=425*dt;
@@ -109,14 +135,18 @@ export function stepInvaders(g,delta,controls={}){
      g.explosions.push({x:g.ufo.x,y:g.ufo.y,ttl:.45});g.ufo=null;g.score+=150;return false;
    }
    const alien=allAliens(g).find(e=>Math.abs(e.x+6-b.x)<18&&Math.abs(e.y+9-b.y)<14);
-   if(alien){g.dead.add(alien.id);g.score+=alien.row<1?30:alien.row<3?20:10;
-     g.explosions.push({x:alien.x+6,y:alien.y+8,ttl:.28});return false;
+   if(alien){
+     const hp=g.armor.get(alien.id)||1;
+     if(hp>1){g.armor.set(alien.id,hp-1);g.score+=5;g.explosions.push({x:alien.x+6,y:alien.y+8,ttl:.18});}
+     else {g.armor.delete(alien.id);g.dead.add(alien.id);g.score+=alien.row<1?30:alien.row<3?20:10;
+       g.explosions.push({x:alien.x+6,y:alien.y+8,ttl:.28});}
+     return false;
    }
    return true;
  });
- for(const b of g.enemyBullets)b.y+=(180+g.wave*24)*dt;
+ for(const b of g.enemyBullets){b.y+=(b.vy||192+g.wave*27)*dt;b.x+=(b.vx||0)*dt;}
  g.enemyBullets=g.enemyBullets.filter(b=>{
-   if(b.y>INVADERS_HEIGHT-15)return false;
+   if(b.y>INVADERS_HEIGHT-15||b.x<-15||b.x>INVADERS_WIDTH+15)return false;
    if(shieldHit(g,b.x,b.y))return false;
    if(g.invulnerable<=0&&Math.abs(b.x-g.x)<20&&Math.abs(b.y-427)<18){
      g.lives--;g.invulnerable=1.6;g.explosions.push({x:g.x,y:425,ttl:.42});
@@ -134,8 +164,9 @@ export function packInvadersState(g){return {
   wave:g.wave,phase:g.phase,score:g.score,lives:g.lives,elapsed:+g.elapsed.toFixed(1),
   x:+g.x.toFixed(1),groupX:+g.groupX.toFixed(1),groupY:+g.groupY.toFixed(1),
   direction:g.direction,dead:[...g.dead],shieldDead:[...g.shieldDead],
+  armored:[...g.armor].filter(([id,hp])=>hp>1&&!g.dead.has(id)).map(([id])=>id),
   playerBullets:g.playerBullets.map(b=>[+b.x.toFixed(0),+b.y.toFixed(0)]),
-  enemyBullets:g.enemyBullets.map(b=>[+b.x.toFixed(0),+b.y.toFixed(0)]),
+  enemyBullets:g.enemyBullets.map(b=>[+b.x.toFixed(0),+b.y.toFixed(0),b.aimed?1:0]),
   ufo:g.ufo?[+g.ufo.x.toFixed(0),+g.ufo.y.toFixed(0)]:null,
   explosions:g.explosions.map(e=>[+e.x.toFixed(0),+e.y.toFixed(0),+e.ttl.toFixed(2)]),
   countdown:+(g.countdown||0).toFixed(1),reason:g.reason
@@ -165,7 +196,7 @@ export function drawInvadersScene(canvas,state={}){
  for(const c of shields)if(!shieldDead.has(c.id)){
    if(!sprite(ctx,'shield',c.x,c.y,SHIELD_CELL,SHIELD_CELL))rect(ctx,c.x+1,c.y+1,SHIELD_CELL-2,SHIELD_CELL-2,'#548c62');
  }
- const dead=new Set(state.dead||[]);
+ const dead=new Set(state.dead||[]),armored=new Set(state.armored||[]);
  for(let id=0;id<COLS*ROWS;id++){
    if(dead.has(id))continue;
    const row=Math.floor(id/COLS),col=id%COLS;
@@ -175,13 +206,17 @@ export function drawInvadersScene(canvas,state={}){
      rect(ctx,x-10,y-6,30,19,row===0?'#e0be75':row<3?'#86b9c7':'#a3c68a');
      rect(ctx,x-3,y+1,4,4,'#193321');rect(ctx,x+10,y+1,4,4,'#193321');
    }
+   // Pequeña franja superior para distinguir a los marcianos blindados.
+   if(armored.has(id)){rect(ctx,x-7,y-16,20,3,'#e8ad54');rect(ctx,x-8,y-17,22,1,'#ffe5a0');}
  }
  if(state.ufo){let [x,y]=state.ufo;if(!sprite(ctx,'ufo',x-27,y-13,55,28))rect(ctx,x-27,y-13,55,22,'#d0a35b');}
  (state.playerBullets||[]).forEach(([x,y])=>{
    if(!sprite(ctx,'bullet',x-5,y-12,10,25))rect(ctx,x-3,y-11,6,17,'#f3dd74');
  });
- (state.enemyBullets||[]).forEach(([x,y])=>{
+ (state.enemyBullets||[]).forEach(([x,y,aimed])=>{
    if(!sprite(ctx,'enemyBullet',x-5,y-11,10,23))rect(ctx,x-3,y-8,6,17,'#e87963');
+   // Un punto visible avisa de los proyectiles dirigidos para esquivarlos.
+   if(aimed)rect(ctx,x-2,y-12,4,4,'#ffde8f');
  });
  const damaged=(state.lives||0)<3;
  // Se mantiene el punto de apoyo de la nave en la zona baja de pantalla.
@@ -198,7 +233,8 @@ export function drawInvadersScene(canvas,state={}){
  text(ctx,'← → / A D: MOVERSE    ESPACIO: DISPARAR',w/2,470,'12px monospace','#a6c19c','center');
  if(phase==='starting'||phase==='intermission'){
    rect(ctx,142,168,356,126,'rgba(9,24,13,.90)');
-   text(ctx,`OLEADA ${state.wave||1}`,320,212,'bold 27px monospace','#dcecd1','center');
+   text(ctx,`OLEADA ${state.wave||1}`,320,206,'bold 27px monospace','#dcecd1','center');
+   if((state.wave||1)>=3)text(ctx,'¡CUIDADO CON LOS BLINDADOS!',320,233,'bold 13px monospace','#efc577','center');
    text(ctx,String(Math.ceil(Number(state.countdown)||0)),320,269,'bold 46px monospace','#e6cb82','center');
  }
  if(phase==='lost'||phase==='won'){
