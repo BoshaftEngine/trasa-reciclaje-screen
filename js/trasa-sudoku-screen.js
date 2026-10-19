@@ -1,5 +1,5 @@
 /* TRASA SUDOKU — observador de partidas sin revelar respuestas. */
-import {drawSudokuScene,formatSudokuTime} from './arcade-sudoku.js?v=21';
+import {drawSudokuScene,formatSudokuTime} from './arcade-sudoku.js?v=22';
 import {loadFirebase,roomPath,isFirebaseConfigured} from './common.js';
 const main=document.getElementById('arcadeStage'),overlay=document.getElementById('sudokuFeaturedStage'),rank=document.getElementById('arcadeSudokuRank'),title=document.getElementById('arcadeFeaturedName');let display={},live={},uid='',canvas=null,info=null,state=null,raf=0;
 function warn(x){if(rank)rank.textContent=x;console.warn('TRASA SUDOKU:',x);}

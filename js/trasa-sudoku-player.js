@@ -1,20 +1,44 @@
-import {createSudoku,stepSudoku,selectSudoku,enterSudoku,hintSudoku,toggleSudokuNotes,packSudokuState,drawSudokuScene,formatSudokuTime} from './arcade-sudoku.js?v=21';
+import {createSudoku,stepSudoku,selectSudoku,enterSudoku,hintSudoku,toggleSudokuNotes,packSudokuState,drawSudokuScene,formatSudokuTime,sudokuDigitCounts,sudokuSelectedDigit} from './arcade-sudoku.js?v=22';
 import {loadFirebase,roomPath,isFirebaseConfigured} from './common.js';
 const $=id=>document.getElementById(id),startBtn=$('startSudoku'),lobby=$('arcadeLobby'),play=$('arcadePlayArea'),root=$('gameRoot'),nick=$('nickname'),end=$('gameEnd');
-let fb,uid='',open=false,banned=false,g=null,frame=0,prev=0,lastSync=0,queue=Promise.resolve(),closing=false,board=null,status=null;
+let fb,uid='',open=false,banned=false,g=null,frame=0,prev=0,lastSync=0,queue=Promise.resolve(),closing=false,board=null,status=null,padDigits=[],lastDigitLayout="";
 const path=p=>roomPath('arcade/'+p);
 function warning(s){let e=$('sudokuWarning');if(!e){e=document.createElement('p');e.id='sudokuWarning';e.className='sudoku-warning';play.append(e);}e.textContent=s;console.warn('TRASA Sudoku:',s);}
 function enabled(){if(startBtn)startBtn.disabled=!(fb&&uid&&open&&!banned&&!g&&!closing&&!lobby.classList.contains('hidden'));}
 function live(force=false,phase='playing'){if(!fb||!g||banned||closing)return queue;const t=Date.now();if(!force&&t-lastSync<440)return queue;lastSync=t;const snapshot={gameId:'sudoku',name:g.name,status:phase,score:g.score,startedAt:g.startedAt,updatedAt:fb.dbMod.serverTimestamp(),state:JSON.stringify(packSudokuState(g))};queue=queue.catch(()=>{}).then(()=>fb.dbMod.set(fb.dbMod.ref(fb.db,path('live/'+uid)),snapshot)).then(()=>{$('sudokuWarning')?.remove();}).catch(e=>warning('Firebase impide retransmitir SUDOKU. Actualiza Rules: '+e.message));return queue;}
 async function save(g){if(!fb||banned)return;try{const r=fb.dbMod.ref(fb.db,path('scores/sudoku/'+uid));await fb.dbMod.runTransaction(r,v=>v&&Number(v.score)>g.score?undefined:{name:g.name,score:g.score,updatedAt:Date.now()});const h=fb.dbMod.push(fb.dbMod.ref(fb.db,path('history/sudoku/'+uid)));await fb.dbMod.set(h,{name:g.name,score:g.score,difficulty:g.difficulty,seconds:Math.floor(g.elapsed),finishedAt:fb.dbMod.serverTimestamp()});}catch(e){warning('No se pudo guardar Sudoku en scores/sudoku y history/sudoku: '+e.message);}}
-function paint(){if(!g)return;if(board)drawSudokuScene(board,packSudokuState(g));if(status)status.textContent=`ERRORES ${g.mistakes}/3 · PISTAS ${g.hints}/3 · ${g.difficulty.toUpperCase()} ${g.notice||''}`;$('playerScore').textContent=`PUNTOS: ${g.score}`;$('playerClock').textContent=`SUDOKU · ${formatSudokuTime(g.elapsed)}`;}
+function updateDigitButtons(){
+ if(!g)return;
+ const counts=sudokuDigitCounts(g.values),signature=counts.slice(1).join(',');
+ if(signature===lastDigitLayout)return;
+ lastDigitLayout=signature;
+ for(let n=1;n<=9;n++){
+  const b=padDigits[n];if(!b)continue;
+  const complete=counts[n]>=9;
+  b.disabled=complete;b.classList.toggle('sudoku-digit-completed',complete);
+  b.setAttribute('aria-hidden',String(complete));
+  b.tabIndex=complete?-1:0;
+  b.title=complete?`${n}: ya están puestos los 9`:`${n}: faltan ${9-counts[n]} de 9`;
+  b.setAttribute('aria-label',`${n}: ${counts[n]} de 9 colocados`);
+ }
+}
+function paint(){
+ if(!g)return;
+ if(board)drawSudokuScene(board,packSudokuState(g));
+ updateDigitButtons();
+ const chosen=sudokuSelectedDigit(g),counts=sudokuDigitCounts(g.values);
+ const detail=chosen?` · NÚMERO ${chosen}: ${counts[chosen]}/9 · FALTAN ${Math.max(0,9-counts[chosen])}`:'';
+ if(status)status.textContent=`ERRORES ${g.mistakes}/3 · PISTAS ${g.hints}/3 · ${g.difficulty.toUpperCase()}${detail} ${g.notice||''}`;
+ $('playerScore').textContent=`PUNTOS: ${g.score}`;
+ $('playerClock').textContent=`SUDOKU · ${formatSudokuTime(g.elapsed)}`;
+}
 function finish(){if(!g||g.phase==='playing')return;cancelAnimationFrame(frame);frame=0;paint();$('endScore').textContent=String(g.score);$('endText').textContent=g.phase==='won'?'¡Sudoku completado! Tu récord se guardará en el TOP 5.':'Has cometido 3 errores. Inténtalo de nuevo.';root.classList.add('hidden');end.classList.remove('hidden');const completed=g;live(true,'finished').then(()=>{if(completed.phase==='won')save(completed);});}
 function act(fn,n){if(!g||g.phase!=='playing')return;fn(g,n);paint();if(g.phase!=='playing')finish();else live();}
 function loop(t){if(!g||g.phase!=='playing'||closing)return;stepSudoku(g,prev?Math.min(.08,(t-prev)/1000):0);prev=t;paint();live();frame=requestAnimationFrame(loop);}
 function control(label,fn,n){const b=document.createElement('button');b.textContent=label;b.type='button';b.onclick=()=>act(fn,n);return b;}
 function begin(){if(!startBtn||startBtn.disabled||g||!fb||!open||banned||lobby.classList.contains('hidden'))return;const name=String(nick.value||'').trim().replace(/\s+/g,' ').slice(0,18);if(name.length<2){$('roomStatus').textContent='Escribe un nombre de al menos 2 caracteres';return;}g=createSudoku($('sudokuDifficulty')?.value||'medio');g.name=name;g.startedAt=Date.now();closing=false;lastSync=0;prev=0;
- $('playerGameTitle').textContent='TRASA SUDOKU';lobby.classList.add('hidden');play.classList.remove('hidden');root.classList.remove('hidden');end.classList.add('hidden');root.replaceChildren();const box=document.createElement('div');box.className='sudoku-game-box';status=document.createElement('div');status.className='sudoku-status';board=document.createElement('canvas');board.width=540;board.height=540;board.className='sudoku-board';board.addEventListener('pointerdown',e=>{const rect=board.getBoundingClientRect(),x=Math.floor(((e.clientX-rect.left)*540/rect.width-26)/54),y=Math.floor(((e.clientY-rect.top)*540/rect.height-26)/54);if(x>=0&&x<9&&y>=0&&y<9)act(selectSudoku,y*9+x);});const pad=document.createElement('div');pad.className='sudoku-pad';for(let n=1;n<=9;n++)pad.append(control(String(n),enterSudoku,n));const tools=document.createElement('div');tools.className='sudoku-tools';tools.append(control('BORRAR',enterSudoku,0),control('NOTAS',toggleSudokuNotes),control('PISTA 💡',hintSudoku));box.append(status,board,pad,tools);root.append(box);paint();live(true);enabled();frame=requestAnimationFrame(loop);}
-async function leave(){if(!g)return;closing=true;cancelAnimationFrame(frame);frame=0;g=null;if(fb&&uid){try{await queue.catch(()=>{});await fb.dbMod.remove(fb.dbMod.ref(fb.db,path('live/'+uid)));}catch(e){warning('Error al cerrar sesión: '+e.message);}}root.replaceChildren();root.classList.remove('hidden');play.classList.add('hidden');lobby.classList.remove('hidden');end.classList.add('hidden');board=null;status=null;closing=false;enabled();}
+ $('playerGameTitle').textContent='TRASA SUDOKU';lobby.classList.add('hidden');play.classList.remove('hidden');root.classList.remove('hidden');end.classList.add('hidden');root.replaceChildren();const box=document.createElement('div');box.className='sudoku-game-box';status=document.createElement('div');status.className='sudoku-status';board=document.createElement('canvas');board.width=540;board.height=540;board.className='sudoku-board';board.addEventListener('pointerdown',e=>{const rect=board.getBoundingClientRect(),x=Math.floor(((e.clientX-rect.left)*540/rect.width-26)/54),y=Math.floor(((e.clientY-rect.top)*540/rect.height-26)/54);if(x>=0&&x<9&&y>=0&&y<9)act(selectSudoku,y*9+x);});const pad=document.createElement('div');pad.className='sudoku-pad';padDigits=[];lastDigitLayout='';for(let n=1;n<=9;n++){const b=control(String(n),enterSudoku,n);padDigits[n]=b;pad.append(b);}const tools=document.createElement('div');tools.className='sudoku-tools';tools.append(control('BORRAR',enterSudoku,0),control('NOTAS',toggleSudokuNotes),control('PISTA 💡',hintSudoku));box.append(status,board,pad,tools);root.append(box);paint();live(true);enabled();frame=requestAnimationFrame(loop);}
+async function leave(){if(!g)return;closing=true;cancelAnimationFrame(frame);frame=0;g=null;if(fb&&uid){try{await queue.catch(()=>{});await fb.dbMod.remove(fb.dbMod.ref(fb.db,path('live/'+uid)));}catch(e){warning('Error al cerrar sesión: '+e.message);}}root.replaceChildren();root.classList.remove('hidden');play.classList.add('hidden');lobby.classList.remove('hidden');end.classList.add('hidden');board=null;status=null;padDigits=[];lastDigitLayout="";closing=false;enabled();}
 window.addEventListener('keydown',e=>{if(!g||g.phase!=='playing')return;const k=e.code,move={ArrowLeft:-1,ArrowRight:1,ArrowUp:-9,ArrowDown:9};if(move[k]!=null){e.preventDefault();const c=g.selected%9;if((k==='ArrowLeft'&&c===0)||(k==='ArrowRight'&&c===8))return;act(selectSudoku,Math.max(0,Math.min(80,g.selected+move[k])));}else if(/^(Digit|Numpad)[1-9]$/.test(k)){e.preventDefault();act(enterSudoku,Number(k.at(-1)));}else if(['Backspace','Delete'].includes(k)){e.preventDefault();act(enterSudoku,0);}else if(k==='KeyN')act(toggleSudokuNotes);else if(k==='KeyH')act(hintSudoku);});
 startBtn?.addEventListener('click',begin);$('exitCurrentGame')?.addEventListener('click',()=>{if(g)leave();});$('backToGames')?.addEventListener('click',()=>{if(g)leave();});
 async function init(){if(!isFirebaseConfigured()){warning('Firebase no configurado');return;}try{fb=await loadFirebase();uid=(await fb.authMod.signInAnonymously(fb.auth)).user.uid;fb.dbMod.onValue(fb.dbMod.ref(fb.db,roomPath('display')),s=>{open=(s.val()||{}).mode==='arcade';if(!open&&g)leave();enabled();});fb.dbMod.onValue(fb.dbMod.ref(fb.db,path('bans/'+uid)),s=>{banned=s.exists();if(banned&&g)leave();enabled();});fb.dbMod.onValue(fb.dbMod.ref(fb.db,path('resetAt')),s=>{if(g&&Number(s.val()||0)>=g.startedAt)leave();});}catch(e){warning('Error de conexión Sudoku: '+e.message);}enabled();}init();
