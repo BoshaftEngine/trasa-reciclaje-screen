@@ -1,4 +1,4 @@
-/* TRASA ARCADE V23 — VISOR UNIFICADO
+/* TRASA ARCADE V25 — VISOR UNIFICADO
  * Un solo selector, un solo titulo y un unico escenario para los seis juegos.
  * Sustituye a los cuatro espectadores independientes que se pisaban el titulo.
  */
@@ -101,6 +101,7 @@ function renderMemory(state) {
 }
 function createStage(player) {
   stopAnimation();
+  currentData = ''; currentInfo = '';
   const panel = makePanel('trasa-v23-' + player.gameId);
   const obj = {
     uid: player.uid, gameId: player.gameId, info: panel.info,
@@ -262,20 +263,198 @@ function ranking(game, data) {
     line.append(name,score);node.append(line);
   });
 }
-async function init() {
-  if (!view) return;
-  if (!isFirebaseConfigured()) { console.warn('TRASA Arcade V23: Firebase no configurado'); return; }
-  try {
-    const f = await loadFirebase();
-    await f.authMod.signInAnonymously(f.auth);
-    f.dbMod.onValue(f.dbMod.ref(f.db,roomPath('display')),snap=>{display=snap.val()||{};reconcile();},err=>console.error('TRASA display:',err));
-    f.dbMod.onValue(f.dbMod.ref(f.db,roomPath('arcade/live')),snap=>{rawLive=snap.val()||{};reconcile();},err=>console.error('TRASA live:',err));
-    for (const game of Object.keys(RANK_IDS)) {
-      f.dbMod.onValue(f.dbMod.ref(f.db,roomPath('arcade/scores/'+game)), snap=>ranking(game,snap.val()), err=>{
-        const target=$(RANK_IDS[game]); if(target) target.textContent='Error Firebase: '+err.message;
+/* V25 — Sincronización recuperable del proyector.
+ * Los oyentes en tiempo real son la vía normal. Las lecturas GET son un
+ * respaldo tras reconectar, al abrir ARCADE y cada 25 s; no requieren
+ * ninguna partida ni escritura de prueba para despertar Firebase.
+ */
+let firebase = null;
+let subscriptions = [];
+let started = false;
+let starting = false;
+let refreshInProgress = false;
+let lastFetchAt = 0;
+let lastOnlineAt = 0;
+let connection = null;
+let startupRetry = null;
+let inFlightRefresh = null;
+let lastError = '';
+const activeErrors = new Map();
+const realtimeEpoch = new Map();
+let lastSyncAt = 0;
+const badge = $('arcadeSyncStatus');
+const pathFor = name => name === '.info/connected' ? name : roomPath(name);
+function updateBadge() {
+  if (!badge) return;
+  const age = lastSyncAt ? Math.floor((Date.now() - lastSyncAt) / 1000) : -1;
+  if (!firebase) {
+    badge.textContent = 'FIREBASE: CONECTANDO';
+    badge.dataset.state = 'pending';
+  } else if (connection === false) {
+    badge.textContent = 'FIREBASE: SIN CONEXIÓN';
+    badge.dataset.state = 'offline';
+  } else if (activeErrors.size) {
+    badge.textContent = 'FIREBASE: REINTENTANDO';
+    badge.title = [...activeErrors.values()].join(' | ').slice(0,512);
+    badge.dataset.state = 'error';
+  } else if (lastSyncAt && age > 45) {
+    badge.textContent = 'FIREBASE: SINCRONIZANDO';
+    badge.dataset.state = 'pending';
+  } else {
+    badge.textContent = 'FIREBASE: CONECTADO';
+    badge.dataset.state = 'online';
+    badge.removeAttribute('title');
+  }
+}
+function noteRead() {
+  lastSyncAt = Date.now();
+  updateBadge();
+}
+function reportError(path, error) {
+  lastError = `${path}: ${error?.message || String(error)}`;
+  activeErrors.set(path, lastError);
+  console.warn('TRASA Arcade V25 — Firebase:', lastError);
+  updateBadge();
+}
+function attach(path, receive) {
+  const item = {path, receive, cancel:null, timer:null, stopped:false, tries:0};
+  function listen() {
+    if (item.stopped || !firebase) return;
+    try {
+      const dbRef = firebase.dbMod.ref(firebase.db, pathFor(path));
+      item.cancel = firebase.dbMod.onValue(dbRef, snapshot => {
+        item.tries = 0;
+        realtimeEpoch.set(path, (realtimeEpoch.get(path)||0)+1);
+        activeErrors.delete(path);
+        if (path !== '.info/connected') noteRead();
+        try { receive(snapshot.val()); } catch (e) { console.error('TRASA V25: procesando', path, e); }
+      }, error => {
+        if (item.stopped) return;
+        reportError(path, error);
+        if (path.startsWith('arcade/scores/')) {
+          const target = $(RANK_IDS[path.split('/').pop()]);
+          if (target) target.textContent = 'Error Firebase: ' + (error?.message || String(error));
+        }
+        item.tries++;
+        const delay = Math.min(30000, 5000 * item.tries);
+        item.timer = setTimeout(listen, delay);
       });
+    } catch (error) {
+      reportError(path, error);
+      item.tries++;
+      item.timer = setTimeout(listen, Math.min(30000, 5000 * item.tries));
     }
-    setInterval(()=>{if(display.mode==='arcade')reconcile();},5000);
-  } catch (e) { console.error('TRASA Arcade V23: error de conexión con Firebase', e); }
+  }
+  listen();
+  subscriptions.push(item);
+  return item;
+}
+async function fetchSnapshot(path, accept, timeoutMs=9500) {
+  // El SDK puede quedar esperando la red. El límite evita bloquear futuros
+  // intentos; NO cancela ni modifica ningún dato en Firebase.
+  let timeout;
+  try {
+    const dbRef = firebase.dbMod.ref(firebase.db, pathFor(path));
+    const before = realtimeEpoch.get(path)||0;
+    const snapshot = await Promise.race([
+      firebase.dbMod.get(dbRef),
+      new Promise((_, reject) => { timeout=setTimeout(()=>reject(new Error('Tiempo de espera agotado')),timeoutMs); })
+    ]);
+    // Si llegó un evento en tiempo real mientras se consultaba, no
+    // sustituimos la instantánea más reciente por otra potencialmente vieja.
+    if ((realtimeEpoch.get(path)||0)===before) accept(snapshot.val());
+    activeErrors.delete(path);
+    noteRead();
+    return true;
+  } catch(e) {
+    reportError(path,e);
+    return false;
+  } finally { clearTimeout(timeout); }
+}
+async function refreshAll(why='periodic') {
+  if (!firebase || refreshInProgress) return inFlightRefresh;
+  refreshInProgress = true;
+  lastFetchAt = Date.now();
+  inFlightRefresh = (async () => {
+    const readings = [
+      ['display', value => { display=value||{}; reconcile(); }],
+      ['arcade/live', value => { rawLive=value||{}; reconcile(); }],
+      ...Object.keys(RANK_IDS).map(game => [
+        'arcade/scores/'+game, value => ranking(game, value)
+      ])
+    ];
+    const outcomes = await Promise.all(readings.map(([path, cb])=>fetchSnapshot(path,cb)));
+    if (outcomes.some(Boolean)) {
+      console.info('TRASA Arcade V25: sincronización comprobada ('+why+')');
+    }
+    updateBadge();
+  })().finally(()=>{refreshInProgress=false;inFlightRefresh=null;});
+  return inFlightRefresh;
+}
+function requestRefresh(why) {
+  if (!firebase) return;
+  // Los eventos pueden acumularse al volver de un periodo de suspensión.
+  if (refreshInProgress) return;
+  refreshAll(why).catch(e=>reportError('refresco',e));
+}
+async function init() {
+  if (!view || started || starting) return;
+  if (!isFirebaseConfigured()) {
+    lastError='Configuración Firebase ausente'; updateBadge();
+    console.warn('TRASA Arcade V25: Firebase no configurado');
+    return;
+  }
+  starting=true;
+  try {
+    firebase = await loadFirebase();
+    await firebase.authMod.signInAnonymously(firebase.auth);
+    started = true;
+    attach('.info/connected', connected => {
+      const was = connection;
+      connection = Boolean(connected);
+      updateBadge();
+      if (connection) {
+        lastOnlineAt=Date.now();
+        if (was !== true) requestRefresh('reconexión');
+      } else if (was === true) {
+        lastError='Conexión con Firebase interrumpida';
+        updateBadge();
+      }
+    });
+    attach('display', value=>{
+      const previousMode=display.mode;
+      display=value||{};
+      reconcile();
+      if (display.mode==='arcade' && previousMode!=='arcade') requestRefresh('apertura de Arcade');
+    });
+    attach('arcade/live', value=>{rawLive=value||{}; reconcile();});
+    for (const game of Object.keys(RANK_IDS)) {
+      attach('arcade/scores/'+game, value=>ranking(game, value));
+    }
+    requestRefresh('inicio');
+    // Lectura de respaldo. Permite que la pantalla recupere cambios incluso
+    // si el WebView/CEF dejó de entregar notificaciones onValue.
+    setInterval(()=>{
+      updateBadge();
+      if (display.mode === 'arcade') {
+        reconcile();
+        if (Date.now()-lastFetchAt > 24000) requestRefresh('vigilancia');
+        if (connection === false && Date.now()-lastOnlineAt > 15000) {
+          try { firebase.dbMod.goOnline(firebase.db); } catch(e) { console.warn(e); }
+        }
+      }
+    }, 5000);
+    window.addEventListener('online', ()=>requestRefresh('navegador conectado'));
+    window.addEventListener('pageshow', ()=>requestRefresh('pantalla reactivada'));
+    window.addEventListener('focus', ()=>requestRefresh('pantalla enfocada'));
+    document.addEventListener('visibilitychange', ()=>{
+      if (!document.hidden) requestRefresh('pantalla visible');
+    });
+  } catch(e) {
+    firebase = null;
+    reportError('inicio',e);
+    clearTimeout(startupRetry);
+    startupRetry=setTimeout(init,10000);
+  } finally { starting=false; }
 }
 init();

@@ -1,0 +1,5 @@
+/* TRASA V25: indicador discreto de conectividad del proyector */
+.arcade-sync-status{margin-left:12px;padding:3px 7px;border:1px solid #71856b;border-radius:4px;font:600 clamp(9px,.8vw,12px) Arial,sans-serif;letter-spacing:.02em;white-space:nowrap;vertical-align:middle;color:#d1dfcd;background:#273229}
+.arcade-sync-status[data-state="online"]{border-color:#759a72;color:#d8f5d5}
+.arcade-sync-status[data-state="offline"],.arcade-sync-status[data-state="error"]{border-color:#bd8a68;color:#ffd0a6}
+.arcade-sync-status[data-state="pending"]{border-color:#737c70;color:#e2e2d6}

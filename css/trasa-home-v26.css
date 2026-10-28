@@ -1,0 +1,22 @@
+/* TRASA V26 — rotación de imágenes de inicio y controles. */
+#homeView { overflow:hidden; }
+#homeView .trasa-home-layer {
+  position:absolute;inset:0;
+  background-position:center;background-size:cover;background-repeat:no-repeat;
+  opacity:0;transition:opacity .45s ease-in-out;pointer-events:none;
+  will-change:opacity;
+}
+#homeView .trasa-home-layer.is-visible {opacity:1;}
+.trasa-slides-fields {display:flex;flex-wrap:wrap;align-items:end;gap:14px;margin:16px 0 12px;}
+.trasa-slides-fields label {display:grid;gap:6px;color:var(--text);font-weight:600;font-size:13px;}
+.trasa-slides-fields select,.trasa-slides-fields input {
+  background:#101710;color:var(--text);border:1px solid var(--border);
+  border-radius:9px;padding:10px 12px;font:inherit;min-width:150px;
+}
+.trasa-slides-fields input {width:175px;}
+.trasa-slides-fields button {min-height:41px;}
+.trasa-slides-fields button:disabled {opacity:.6;cursor:wait;}
+.trasa-slides-files {display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 12px;}
+.trasa-slides-files code {background:#101710;color:#c7dec2;padding:7px 10px;border:1px solid #354138;border-radius:7px;font:12px monospace;}
+.trasa-slides-control #homeSlidesStatus {color:#c0d8bb;min-height:20px;}
+@media (prefers-reduced-motion: reduce) {#homeView .trasa-home-layer{transition:none;}}

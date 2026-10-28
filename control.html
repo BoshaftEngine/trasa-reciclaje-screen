@@ -4,6 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>TRASA · Control de reciclaje</title>
   <link rel="stylesheet" href="css/control.css?v=1">
+  <link rel="stylesheet" href="css/trasa-home-v26.css?v=26">
   <link rel="stylesheet" href="css/arcade.css?v=19">
 </head>
 <body><main class="shell">
@@ -17,7 +18,29 @@
     <button id="homeBtn">VOLVER A INICIO</button>
     <button id="clearBtn" class="danger">Limpiar cantidades</button></div>
     <p class="help">Solo aparecerán materiales con cantidad mayor que 0. Limpiar cantidades no cambia la pantalla hasta que vuelvas a publicar.</p></section>
-  <section class="panel arcade-control-panel"><h2>TRASA ARCADE · CINCO MINIJUEGOS <small>V20</small></h2>
+  
+  <section class="panel trasa-slides-control" aria-labelledby="trasaSlidesHeading">
+    <h2 id="trasaSlidesHeading">IMÁGENES DE INICIO · PRESENTACIÓN</h2>
+    <p class="help">Configura cuántas imágenes quieres mostrar cuando la pantalla esté en INICIO y cada cuántos segundos cambiarán. Se guardará para todos los proyectores, incluso al pasar por Materiales o Arcade.</p>
+    <div class="trasa-slides-fields">
+      <label for="homeSlidesCount">Número de imágenes
+        <select id="homeSlidesCount">
+          <option value="1">1 imagen (fija)</option>
+          <option value="2">2 imágenes</option>
+          <option value="3">3 imágenes</option>
+          <option value="4">4 imágenes</option>
+        </select>
+      </label>
+      <label for="homeSlidesSeconds">Cambiar cada (segundos)
+        <input id="homeSlidesSeconds" type="number" value="10" min="2" max="3600" step="1" inputmode="numeric">
+      </label>
+      <button id="homeSlidesSave" type="button" class="primary">GUARDAR PRESENTACIÓN</button>
+    </div>
+    <div id="homeSlidesFiles" class="trasa-slides-files" aria-live="polite">assets/inicio.png</div>
+    <p id="homeSlidesStatus" class="help" role="status">Cargando configuración de Firebase…</p>
+    <p class="help">Archivos PNG necesarios: <code>assets/inicio.png</code>, <code>assets/inicio1.png</code>, <code>assets/inicio2.png</code>, <code>assets/inicio3.png</code>. No es necesario añadir los que no utilices.</p>
+  </section>
+  <section class="panel arcade-control-panel"><h2>TRASA ARCADE · SEIS MINIJUEGOS <small>V26</small></h2>
     <p class="help">Activa Arcade para que los clientes jueguen desde el móvil y vean la partida destacada en el proyector. Los botones de resultados e inicio conservan su prioridad.</p>
     <div class="actions"><button id="openArcadeBtn" class="primary big">ABRIR TRASA ARCADE</button><button id="copyArcadeLink">COPIAR ENLACE</button></div>
     <p class="arcade-control-url"><a id="arcadeLink" href="juego.html" target="_blank" rel="noopener">juego.html</a></p>
@@ -34,7 +57,7 @@
     <div class="arcade-control-feature-row"><select id="arcadeBannedSelect"><option value="">Ninguna</option></select><button id="arcadeUnbanParticipant">DESBLOQUEAR</button></div>
     <p id="arcadeAdminStatus" class="help">Conectando administración…</p></section>
   <section class="panel"><h2>Firebase</h2><p class="help">Copia este UID y úsalo en las reglas de Realtime Database.</p><div id="uidBox" class="uid">Conectando…</div></section>
-</main><script type="module" src="js/control.js?v=4"></script>
-<script type="module" src="js/arcade-control.js?v=19"></script>
+</main><script type="module" src="js/control.js?v=26"></script>
+<script type="module" src="js/arcade-control.js?v=26"></script>
 <script type="module" src="js/trasa-invaders-control.js?v=21"></script></body>
 </html>
