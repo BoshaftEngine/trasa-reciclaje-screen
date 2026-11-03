@@ -1,0 +1,6 @@
+/* V29: lupa de cantidades; solo afecta al importador */
+.trasa-import-row{grid-template-columns:68px minmax(0,1fr) 108px}
+.trasa-import-quantity-preview{display:block;width:100%;height:42px;object-fit:fill;image-rendering:pixelated;background:#000;border:1px solid #58715d;border-radius:5px}
+.trasa-import-quantity input{font-size:20px;padding:7px 2px}
+.trasa-import-quantity input:placeholder-shown{border-color:#b78a3e}
+@media(max-width:450px){.trasa-import-row{grid-template-columns:58px minmax(0,1fr) 101px;gap:6px}}

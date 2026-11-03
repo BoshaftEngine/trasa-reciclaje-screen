@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="css/control.css?v=1">
   <link rel="stylesheet" href="css/trasa-home-v26.css?v=26">
   <link rel="stylesheet" href="css/trasa-import-v27.css?v=27">
+  <link rel="stylesheet" href="css/trasa-quantity-v29.css?v=29">
   <link rel="stylesheet" href="css/arcade.css?v=19">
 </head>
 <body><main class="shell">
@@ -14,7 +15,7 @@
   <div id="configError" class="notice error hidden"></div><div id="message" class="notice hidden"></div>
   <section class="panel"><h2>Materiales obtenidos</h2><div id="materialInputs" class="material-inputs"></div></section>
   <section class="panel trasa-import-control" id="trasaImportPanel">
-    <h2>IMPORTAR MATERIALES DESDE CAPTURA <small>V28</small></h2>
+    <h2>IMPORTAR MATERIALES DESDE CAPTURA <small>V29</small></h2>
     <p class="help">Pega una captura de la cuadrícula del inventario de GTA. Leeremos las cantidades y compararemos los iconos con los materiales. Revisa el resultado antes de pasarlo al formulario.</p>
     <div id="trasaImportDrop" class="trasa-import-drop" tabindex="0" role="button" aria-label="Seleccionar imagen de inventario">
       <span class="trasa-import-drop-label">📷 PEGAR (Ctrl + V), ARRASTRAR O ELEGIR CAPTURA</span>
@@ -25,11 +26,11 @@
       <label>Al importar <select id="trasaImportMode"><option value="replace">Sustituir cantidades actuales</option><option value="sum">Sumar a las cantidades actuales</option></select></label>
     </div>
     <canvas id="trasaImportPreview" class="trasa-import-preview" hidden aria-label="Captura seleccionada"></canvas>
-    <div class="actions"><button id="trasaImportScan" type="button" disabled class="primary">ANALIZAR CAPTURA</button><button id="trasaImportApply" type="button" disabled>RELLENAR FORMULARIO</button><button id="trasaImportClear" type="button">LIMPIAR CAPTURA</button></div>
+    <div class="actions"><button id="trasaImportScan" type="button" disabled class="primary">ANALIZAR CAPTURA</button><button id="trasaImportApply" type="button" disabled>RELLENAR FORMULARIO</button><button id="trasaImportClear" type="button">LIMPIAR CAPTURA</button><button id="trasaImportOcr" type="button" disabled>REINTENTAR OCR EXTERNO (OPCIONAL)</button></div>
     <p id="trasaImportStatus" class="help" role="status"></p>
     <p id="trasaImportSummary" class="help trasa-import-summary"></p>
     <div id="trasaImportRows" class="trasa-import-rows"></div>
-    <p class="help">Las cantidades xNNN se leen en tu navegador sin conexión. Si el formato es diferente, se intentará un OCR alternativo. Comprueba los números antes de publicar.</p>
+    <p class="help">V29: lectura local sin descargar OCR. Cada casilla muestra su número ampliado para comprobarlo. Si falta algún valor, puedes escribirlo o pulsar OCR EXTERNO (opcional, necesita internet). Comprueba las cantidades antes de publicar.</p>
   </section>
   <section class="panel"><h2>Control de pantalla</h2><div class="actions">
     <button id="showResultsBtn" class="primary big">MOSTRAR MATERIALES</button>
@@ -77,7 +78,7 @@
     <p id="arcadeAdminStatus" class="help">Conectando administración…</p></section>
   <section class="panel"><h2>Firebase</h2><p class="help">Copia este UID y úsalo en las reglas de Realtime Database.</p><div id="uidBox" class="uid">Conectando…</div></section>
 </main><script type="module" src="js/control.js?v=26"></script>
-<script type="module" src="js/trasa-import-v28.js?v=28"></script>
+<script type="module" src="js/trasa-import-v29.js?v=29"></script>
 <script type="module" src="js/arcade-control.js?v=26"></script>
 <script type="module" src="js/trasa-invaders-control.js?v=21"></script></body>
 </html>
